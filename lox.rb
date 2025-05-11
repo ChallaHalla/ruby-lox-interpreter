@@ -49,6 +49,7 @@ class Lox
 
     sig { params(line: Integer, where: String, message: String).void }
     def report(line:, where:, message:)
+      puts "[line #{line}  Error #{where}: #{message}"
       self.had_error = true
     end
   end

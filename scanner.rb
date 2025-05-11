@@ -214,10 +214,9 @@ class Scanner
     )
   end
 
-  sig { returns(String) }
+  sig { returns(T.nilable(String)) }
   def advance
     c = @source[@current]
-    raise 'substring not found' if c.nil?
 
     @current += 1
     c
