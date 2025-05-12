@@ -16,24 +16,23 @@ class Scanner
   attr_accessor :start, :current, :line
 
   @keywords = T.let({
-                      'and' => TokenType::AND,
-                      'class' => TokenType::CLASS,
-                      'else' => TokenType::ELSE,
-                      'false' => TokenType::FALSE,
-                      'for' => TokenType::FOR,
-                      'fun' => TokenType::FUN,
-                      'if' => TokenType::IF,
-                      'nil' => TokenType::NIL,
-                      'or' => TokenType::OR,
-                      'print' => TokenType::PRINT,
-                      'return' => TokenType::RETURN,
-                      'super' => TokenType::SUPER,
-                      'this' => TokenType::THIS,
-                      'true' => TokenType::TRUE,
-                      'var' => TokenType::VAR,
-                      'while' => TokenType::WHILE
-
-                    }, T::Hash[String, TokenType])
+    'and' => TokenType::AND,
+    'class' => TokenType::CLASS,
+    'else' => TokenType::ELSE,
+    'false' => TokenType::FALSE,
+    'for' => TokenType::FOR,
+    'fun' => TokenType::FUN,
+    'if' => TokenType::IF,
+    'nil' => TokenType::NIL,
+    'or' => TokenType::OR,
+    'print' => TokenType::PRINT,
+    'return' => TokenType::RETURN,
+    'super' => TokenType::SUPER,
+    'this' => TokenType::THIS,
+    'true' => TokenType::TRUE,
+    'var' => TokenType::VAR,
+    'while' => TokenType::WHILE
+  }, T::Hash[String, TokenType])
 
   class << self
     extend T::Sig
