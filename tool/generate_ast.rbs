@@ -1,0 +1,8 @@
+class GenerateAst
+  class << self
+    def run: () -> void
+    def define_ast: (output_dir: String, base_name: String, types: Array[String]) -> void
+    def define_type: (path: String, base_name: String, class_name: String, fields: Array[String]) -> void
+    def define_visitor: (writer: untyped, base_name: untyped, types: untyped) -> void
+  end
+end 

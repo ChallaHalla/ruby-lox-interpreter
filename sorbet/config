@@ -2,3 +2,6 @@
 .
 --ignore=tmp/
 --ignore=vendor/
+
+--enable-experimental-rbs-signatures
+--enable-experimental-rbs-assertions
