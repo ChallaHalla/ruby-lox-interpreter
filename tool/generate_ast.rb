@@ -67,17 +67,18 @@ class GenerateAst
       File.write(path, "class #{class_name} < #{base_name.capitalize} \n", mode: 'a+')
 
       fields_list = fields.join(', ')
-      File.write(path, "def initialize(#{fields_list})\n", mode: 'a+')
-      fields.each do |field|
-        File.write(path, "this.#{field} = #{field}\n", mode: 'a+')
-      end
-      File.write(path, "end\n", mode: 'a+')
       fields.each do |field|
         File.write(path, "attr_reader :#{field}\n", mode: 'a+')
       end
+      File.write(path, "def initialize(#{fields_list})\n", mode: 'a+')
+      fields.each do |field|
+        File.write(path, "@#{field} = #{field}\n", mode: 'a+')
+      end
+      File.write(path, "end\n", mode: 'a+')
+
       # define visitor method
       File.write(path, "def accept(visitor)\n", mode: 'a+')
-      File.write(path, "visitor.visit_#{class_name.downcase}_#{base_name}(this)\n", mode: 'a+')
+      File.write(path, "visitor.visit_#{class_name.downcase}_#{base_name}(self)\n", mode: 'a+')
       File.write(path, "end\n", mode: 'a+')
 
       File.write(path, "end\n", mode: 'a+')
