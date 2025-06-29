@@ -3,3 +3,7 @@ inherit_from: .rubocop_todo.yml
 Layout/FirstHashElementIndentation:
    Enabled: false
 
+Metrics/MethodLength:
+   Enabled: false
+
+
