@@ -21,7 +21,9 @@ module Visitor
 end
 
 class Binary < Expr
-  attr_reader :expr_left, :token_operator, :expr_right
+  include Visitor
+  attr_reader :expr_left
+  attr_reader :token_operator, :expr_right
 
   def initialize(expr_left, token_operator, expr_right)
     @expr_left = expr_left
@@ -35,6 +37,7 @@ class Binary < Expr
 end
 
 class Grouping < Expr
+  include Visitor
   attr_reader :expr_expression
 
   def initialize(expr_expression)
@@ -47,6 +50,7 @@ class Grouping < Expr
 end
 
 class Literal < Expr
+  include Visitor
   attr_reader :object_value
 
   def initialize(object_value)
@@ -59,7 +63,9 @@ class Literal < Expr
 end
 
 class Unary < Expr
-  attr_reader :token_operator, :expr_right
+  include Visitor
+  attr_reader :token_operator
+  attr_reader :expr_right
 
   def initialize(token_operator, expr_right)
     @token_operator = token_operator

@@ -66,6 +66,7 @@ class GenerateAst
     def define_type(path:, base_name:, class_name:, fields:)
       File.write(path, "class #{class_name} < #{base_name.capitalize} \n", mode: 'a+')
 
+      File.write(path, "include Visitor \n", mode: 'a+')
       fields_list = fields.join(', ')
       fields.each do |field|
         File.write(path, "attr_reader :#{field}\n", mode: 'a+')

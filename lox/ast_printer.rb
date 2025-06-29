@@ -40,14 +40,3 @@ class AstPrinter
     str
   end
 end
-expression = Binary.new(
-  Unary.new(
-    Token.new(type: TokenType::MINUS, lexeme: '-', literal: nil, line: 1),
-    Literal.new(123)
-  ),
-  Token.new(type: TokenType::STAR, lexeme: '*', literal: nil, line: 1),
-  Grouping.new(
-    Literal.new(45.67)
-  )
-)
-puts AstPrinter.new.print(expression)
