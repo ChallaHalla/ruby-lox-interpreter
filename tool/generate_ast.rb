@@ -105,9 +105,6 @@ class GenerateAst
       content = "class #{class_name} < #{base_name.capitalize} \n"
       content += "include Visitor \n"
 
-      # 1. build strings of types and fields for method args and sig
-      # iterator over types to add attr_accessors
-      
       field_names = []
       sig_types = []
 
