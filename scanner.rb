@@ -6,16 +6,16 @@ require './token_type'
 class Scanner
   extend T::Sig
 
-  sig { returns(String) }
+  #: String
   attr_accessor :source
 
-  sig { returns(T::Array[Token]) }
+  #: Array[Token]
   attr_accessor :tokens
 
-  sig { returns(Integer) }
+  #: Integer
   attr_accessor :start, :current, :line
 
-  @keywords = T.let({
+  @keywords = {
     'and' => TokenType::AND,
     'class' => TokenType::CLASS,
     'else' => TokenType::ELSE,
@@ -32,24 +32,24 @@ class Scanner
     'true' => TokenType::TRUE,
     'var' => TokenType::VAR,
     'while' => TokenType::WHILE
-  }, T::Hash[String, TokenType])
+  } #: Hash[String, TokenType]
 
   class << self
     extend T::Sig
-    sig { returns(T::Hash[String, TokenType]) }
+    #: Hash[String, TokenType]
     attr_reader :keywords
   end
 
-  sig { params(source: String).void }
+  #: (source: String) -> void
   def initialize(source:)
-    @source = T.let(source, String)
-    @tokens = T.let([], T::Array[Token])
-    @start = T.let(0, Integer)
-    @current = T.let(0, Integer)
-    @line = T.let(1, Integer)
+    @source = source #: String
+    @tokens = [] #: Array[Token]
+    @start = 0 #: Integer
+    @current = 0 #: Integer
+    @line = 1 #: Integer
   end
 
-  sig { params(source: String).returns(T::Array[Token]) }
+  #: (String) -> Array[Token]
   def scan_tokens(source)
     until is_at_end?
       @start = @current
@@ -66,7 +66,7 @@ class Scanner
 
   private
 
-  sig { void }
+  #: () -> void
   def scan_token
     c = @source[@current]
     return unless c
@@ -129,7 +129,7 @@ class Scanner
     end
   end
 
-  sig { params(expected: String).returns(T::Boolean) }
+  #: (String) -> bool
   def match(expected)
     return false if is_at_end?
     return false if @source[@current] != expected
@@ -138,7 +138,7 @@ class Scanner
     true
   end
 
-  sig { void }
+  #: () -> void
   def string
     while !is_at_end? && peek != '"'
       @line += 1 if peek == "\n"
@@ -151,7 +151,7 @@ class Scanner
     add_token(type: TokenType::STRING, literal: string_value)
   end
 
-  sig { void }
+  #: () -> void
   def number
     advance while is_digit?(peek)
     if peek == '.' && is_digit?(peek_next)
@@ -167,7 +167,7 @@ class Scanner
     add_token(type: TokenType::NUMBER, literal: parsed)
   end
 
-  sig { void }
+  #: () -> void
   def identifier
     advance while is_alpha_numeric?(peek)
     text = @source[@start..@current]
@@ -178,29 +178,29 @@ class Scanner
     add_token_from_type(type)
   end
 
-  sig { params(char: String).returns(T::Boolean) }
+  #: (String) -> bool
   def is_digit?(char)
     char.ord >= '0'.ord && char.ord <= '9'.ord
   end
 
-  sig { params(char: String).returns(T::Boolean) }
+  #: (String) -> bool
   def is_alpha?(char)
     char.ord >= 'a'.ord && char.ord <= 'z'.ord ||
       char.ord >= 'A'.ord && char.ord <= 'Z'.ord ||
       char == '_'
   end
 
-  sig { params(char: String).returns(T::Boolean) }
+  #: (String) -> bool
   def is_alpha_numeric?(char)
     is_digit?(char) || is_alpha?(char)
   end
 
-  sig { params(type: TokenType).void }
+  #: (TokenType) -> void
   def add_token_from_type(type)
     add_token(type: type, literal: nil)
   end
 
-  sig { params(type: TokenType, literal: Object).void }
+  #: (type: TokenType, literal: Object) -> void
   def add_token(type:, literal:)
     text = @source[@start..@current - 1]
     raise 'substring not found' if text.nil?
@@ -213,7 +213,7 @@ class Scanner
     )
   end
 
-  sig { returns(T.nilable(String)) }
+  #: () -> String?
   def advance
     c = @source[@current]
 
@@ -221,7 +221,7 @@ class Scanner
     c
   end
 
-  sig { returns(String) }
+  #: () -> String
   def peek
     return '\0' if is_at_end?
 
@@ -231,7 +231,7 @@ class Scanner
     current_char
   end
 
-  sig { returns(String) }
+  #: () -> String
   def peek_next
     return '\0' if current + 1 == @source.length
 
@@ -241,7 +241,7 @@ class Scanner
     next_char
   end
 
-  sig { returns(T::Boolean) }
+  #: () -> bool
   def is_at_end?
     @current >= @source.length
   end

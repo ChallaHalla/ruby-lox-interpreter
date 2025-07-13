@@ -4,7 +4,7 @@ require 'sorbet-runtime'
 require './scanner'
 
 class Lox
-  @had_error = T.let(false, T::Boolean)
+  @had_error = false #: bool
 
   #: () -> void
   def main
