@@ -1,10 +1,10 @@
-# typed: true
+# typed: strict
 
 require 'sorbet-runtime'
 
 class GenerateAst
   class << self
-    # () -> void
+    #: () -> void
     def run
       raise 'Usage: generate_ast <output directory>' if ARGV.length < 1
 
@@ -16,19 +16,53 @@ class GenerateAst
                                                           'Unary    : Token operator, Expr right'])
     end
 
-    # (
-    # |   String output_dir,
-    # |   String base_name,
-    # |   Array[String] types
-    # | ) -> void
+    #: (output_dir: String, base_name: String, types: Array[String]) -> void
     def define_ast(output_dir:, base_name:, types:)
       path = "#{output_dir}/#{base_name}.rb"
-      File.write(path, "class #{base_name.capitalize} \n")
-      File.write(path, "def accept(visitor); raise 'not implemented';end\n", mode: 'a+')
-      File.write(path, "end\n", mode: 'a+')
+      
+      content = build_ast_content(base_name:, types:)
+      File.write(path, content)
+    end
 
-      define_visitor_module(path:, base_name:, types:)
+    #: (base_name: String, types: Array[String]) -> String
+    def build_ast_content(base_name:, types:)
+      error_class = build_error_class
+      base_class = build_base_class(base_name)
+      visitor_module = build_visitor_module(base_name:, types:)
+      type_classes = build_type_classes(base_name:, types:)
+      
+      [error_class, base_class, visitor_module, type_classes].join("\n")
+    end
 
+    #: () -> String
+    def build_error_class
+      "class MethodNotImplemented < StandardError\n" +
+      "end\n"
+    end
+
+    #: (String) -> String
+    def build_base_class(base_name)
+      "class #{base_name.capitalize} \n" +
+      "def accept(visitor); raise MethodNotImplemented;end\n" +
+      "end\n"
+    end
+
+    #: (base_name: String, types: Array[String]) -> String
+    def build_visitor_module(base_name:, types:)
+      content = "module Visitor\n"
+      types.each do |type|
+        type_name = type.split(':')[0]&.strip&.downcase
+        content += "def visit_#{type_name}_#{base_name}\n"
+        content += "raise MethodNotImplemented\n "
+        content += "end\n"
+      end
+      content += "end\n"
+      content
+    end
+
+    #: (base_name: String, types: Array[String]) -> String
+    def build_type_classes(base_name:, types:)
+      content = ""
       types.each do |type|
         class_name = type.split(':')[0]&.strip
         fields = type.split(':')[1]&.strip
@@ -37,56 +71,35 @@ class GenerateAst
         end
         next unless class_name && fields
 
-        define_type(path:, base_name:, class_name:, fields: snake_case_fields)
+        content += build_type_class(base_name:, class_name:, fields: snake_case_fields)
       end
+      content
     end
 
-    # : (
-    # |  String path,
-    # |  String base_name,
-    # |  Array[String] types
-    # | ) -> Float
-    def define_visitor_module(path:, base_name:, types:)
-      File.write(path, "module Visitor\n", mode: 'a+')
-      types.each do |type|
-        type_name = type.split(':')[0]&.strip&.downcase
-        File.write(path, "def visit_#{type_name}_#{base_name}\n", mode: 'a+')
-        File.write(path, "raise 'not_implemented'\n ", mode: 'a+')
-        File.write(path, "end\n", mode: 'a+')
-      end
-      File.write(path, "end\n", mode: 'a+')
-    end
-
-    # (
-    # |   String path,
-    # |   String base_name,
-    # |   String class_name,
-    # |   Array[String] fields
-    # | ) -> void
-    def define_type(path:, base_name:, class_name:, fields:)
-      File.write(path, "class #{class_name} < #{base_name.capitalize} \n", mode: 'a+')
-
-      File.write(path, "include Visitor \n", mode: 'a+')
+    #: (base_name: String, class_name: String, fields: Array[String]) -> String
+    def build_type_class(base_name:, class_name:, fields:)
+      content = "class #{class_name} < #{base_name.capitalize} \n"
+      content += "include Visitor \n"
+      
       fields_list = fields.join(', ')
       fields.each do |field|
-        File.write(path, "attr_reader :#{field}\n", mode: 'a+')
+        content += "attr_reader :#{field}\n"
       end
-      File.write(path, "def initialize(#{fields_list})\n", mode: 'a+')
+      
+      content += "def initialize(#{fields_list})\n"
       fields.each do |field|
-        File.write(path, "@#{field} = #{field}\n", mode: 'a+')
+        content += "@#{field} = #{field}\n"
       end
-      File.write(path, "end\n", mode: 'a+')
+      content += "end\n"
 
-      # define visitor method
-      File.write(path, "def accept(visitor)\n", mode: 'a+')
-      File.write(path, "visitor.visit_#{class_name.downcase}_#{base_name}(self)\n", mode: 'a+')
-      File.write(path, "end\n", mode: 'a+')
+      content += "def accept(visitor)\n"
+      content += "visitor.visit_#{class_name.downcase}_#{base_name}(self)\n"
+      content += "end\n"
 
-      File.write(path, "end\n", mode: 'a+')
+      content += "end\n"
+      content
     end
   end
 end
 
-# Make module with methods that eaise if not implemented
-# Add methods on child classes to implement visitations
 GenerateAst.run

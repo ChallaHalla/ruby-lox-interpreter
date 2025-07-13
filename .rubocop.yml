@@ -6,4 +6,5 @@ Layout/FirstHashElementIndentation:
 Metrics/MethodLength:
    Enabled: false
 
-
+plugins:
+  - rubocop-sorbet

@@ -3,9 +3,10 @@
 class Token
   extend T::Sig
 
+  #: String
   attr_reader :lexeme
 
-  sig { params(type: TokenType, lexeme: String, literal: Object, line: Integer).void }
+  #: (type: TokenType, lexeme: String, literal: Object, line: Integer) -> void
   def initialize(type:, lexeme:, literal:, line:)
     @type = type
     @lexeme = lexeme
@@ -13,7 +14,7 @@ class Token
     @line = line
   end
 
-  sig { returns(String) }
+  #: () -> String
   def to_s
     "#{@type} #{@lexeme} #{@literal}"
   end
