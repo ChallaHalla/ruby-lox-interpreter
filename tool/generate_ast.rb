@@ -27,11 +27,13 @@ class GenerateAst
     #: (base_name: String, types: Array[String]) -> String
     def build_ast_content(base_name:, types:)
       error_class = build_error_class
-      base_class = build_base_class(base_name)
+      # Separating start and end of Expr class so that
+      # it can wrap all other expression classes 
+      base_class_start = start_base_class(base_name)
       visitor_module = build_visitor_module(base_name:, types:)
       type_classes = build_type_classes(base_name:, types:)
-      
-      [error_class, base_class, visitor_module, type_classes].join("\n")
+      base_class_end = "end \n"
+      [error_class, base_class_start, visitor_module, type_classes, base_class_end].join("\n")
     end
 
     #: () -> String
@@ -41,10 +43,9 @@ class GenerateAst
     end
 
     #: (String) -> String
-    def build_base_class(base_name)
+    def start_base_class(base_name)
       "class #{base_name.capitalize} \n" +
-      "def accept(visitor); raise MethodNotImplemented;end\n" +
-      "end\n"
+      "def accept(visitor); raise MethodNotImplemented;end\n"
     end
 
     #: (base_name: String, types: Array[String]) -> String

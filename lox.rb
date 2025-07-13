@@ -2,9 +2,12 @@
 
 require 'sorbet-runtime'
 require './scanner'
+require_relative 'lox/ast_printer'
+require_relative 'lox/parser'
 
 class Lox
   @had_error = false #: bool
+  @running_prompt = false #: bool
 
   #: () -> void
   def main
@@ -30,15 +33,24 @@ class Lox
   def run(source)
     scanner = Scanner.new(source:)
     tokens = scanner.scan_tokens(source)
-    tokens.each do |token|
-      puts token
+    parser = Parser.new(tokens)
+    expression = parser.parse
+    if self.class.had_error || expression.nil?
+      if self.class.running_prompt
+        self.class.had_error = false
+      end
+      return
     end
+
+    puts AstPrinter.new.print(expression)
   end
 
   class << self
     extend T::Sig
     #: bool
     attr_accessor :had_error
+    #: bool
+    attr_accessor :running_prompt
 
     #: (line: Integer, message: String) -> void
     def error(line:, message:)
@@ -50,10 +62,20 @@ class Lox
       puts "[line #{line}  Error #{where}: #{message}"
       self.had_error = true
     end
+
+    #: (Token, String) -> void
+    def error_for_token(token, message)
+      if token.type == TokenType::EOF
+        report(line: token.line, where:" at end", message: message)
+      else
+        report(line: token.line, where:" at '#{token.lexeme}'", message: message)
+      end
+    end
   end
 
   #: () -> void
   def run_prompt
+    self.class.running_prompt = true #: bool
     while true
       print '> '
       input = gets

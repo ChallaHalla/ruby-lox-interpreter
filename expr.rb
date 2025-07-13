@@ -3,7 +3,6 @@ end
 
 class Expr 
 def accept(visitor); raise MethodNotImplemented;end
-end
 
 module Visitor
 def visit_binary_expr
@@ -66,3 +65,5 @@ def accept(visitor)
 visitor.visit_unary_expr(self)
 end
 end
+
+end 
