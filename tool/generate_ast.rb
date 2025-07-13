@@ -14,6 +14,8 @@ class GenerateAst
                                                           'Grouping : Expr expression',
                                                           'Literal  : Object value',
                                                           'Unary    : Token operator, Expr right'])
+
+      exec("rubocop -A #{output_dir}/expr.rb")
     end
 
     #: (output_dir: String, base_name: String, types: Array[String]) -> void
