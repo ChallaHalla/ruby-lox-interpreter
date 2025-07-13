@@ -4,10 +4,14 @@ require 'sorbet-runtime'
 require './scanner'
 require_relative 'lox/ast_printer'
 require_relative 'lox/parser'
+require_relative "lox/runtime_error"
+require_relative "lox/interpreter"
 
 class Lox
   @had_error = false #: bool
+  @had_runtime_error = false #: bool
   @running_prompt = false #: bool
+  @interpreter = Interpreter.new #: Interpreter
 
   #: () -> void
   def main
@@ -24,9 +28,11 @@ class Lox
   def run_file(path)
     source = File.read(path)
     run(source)
-    return unless self.class.had_error
-
-    exit
+    if self.class.had_error
+      exit(65)
+    elsif self.class.had_runtime_error
+      exit(70)
+    end
   end
 
   #: (String) -> void
@@ -42,7 +48,7 @@ class Lox
       return
     end
 
-    puts AstPrinter.new.print(expression)
+    self.class.interpreter.interpret(expression)
   end
 
   class << self
@@ -50,17 +56,15 @@ class Lox
     #: bool
     attr_accessor :had_error
     #: bool
+    attr_accessor :had_runtime_error
+    #: bool
     attr_accessor :running_prompt
+    #: Interpreter
+    attr_accessor :interpreter
 
     #: (line: Integer, message: String) -> void
     def error(line:, message:)
       report(line:, where: '', message:)
-    end
-
-    #: (line: Integer, where: String, message: String) -> void
-    def report(line:, where:, message:)
-      puts "[line #{line}  Error #{where}: #{message}"
-      self.had_error = true
     end
 
     #: (Token, String) -> void
@@ -70,6 +74,19 @@ class Lox
       else
         report(line: token.line, where:" at '#{token.lexeme}'", message: message)
       end
+    end
+
+
+    #: (RuntimeError) -> void
+    def runtime_error(err)
+      puts "#{err.message} \n [line #{err.token.line}]"
+      self.had_runtime_error = true
+    end
+
+    #: (line: Integer, where: String, message: String) -> void
+    def report(line:, where:, message:)
+      puts "[line #{line}  Error #{where}: #{message}"
+      self.had_error = true
     end
   end
 
