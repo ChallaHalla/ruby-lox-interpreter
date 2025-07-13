@@ -69,32 +69,45 @@ class GenerateAst
       types.each do |type|
         class_name = type.split(':')[0]&.strip
         fields = type.split(':')[1]&.strip
-        snake_case_fields = fields&.split(', ')&.map do |field|
-          field.downcase.gsub(' ', '_')
-        end
+        # Here we want to get the fields and types together
+        # to build attr_readers with type info
         next unless class_name && fields
 
-        content += build_type_class(base_name:, class_name:, fields: snake_case_fields)
+        content += build_type_class(base_name:, class_name:, types: fields.split(","))
       end
       content
     end
 
-    #: (base_name: String, class_name: String, fields: Array[String]) -> String
-    def build_type_class(base_name:, class_name:, fields:)
+    #: (base_name: String, class_name: String, types: Array[String]) -> String
+    def build_type_class(base_name:, class_name:, types:)
       content = "class #{class_name} < #{base_name.capitalize} \n"
       content += "include Visitor \n"
+
+      # 1. build strings of types and fields for method args and sig
+      # iterator over types to add attr_accessors
       
-      fields_list = fields.join(', ')
-      fields.each do |field|
-        content += "attr_reader :#{field}\n"
+      field_names = []
+      sig_types = []
+
+      types.each do |type|
+        sig_type, field_name = type.split(" ")
+        content += "#: #{sig_type}\n"
+        content += "attr_reader :#{field_name}\n"
+        field_names << field_name
+        sig_types << sig_type
       end
       
-      content += "def initialize(#{fields_list})\n"
-      fields.each do |field|
-        content += "@#{field} = #{field}\n"
+      content += "#: (#{sig_types.join(", ")}) -> void\n"
+      content += "def initialize(#{field_names.join(", ")})\n"
+
+      types.each do |type|
+        sig_type, field_name = type.split(" ")
+        content += "@#{field_name} = #{field_name} #: #{sig_type}\n"
       end
+
       content += "end\n"
 
+      content += "#: (Expr) -> void\n"
       content += "def accept(visitor)\n"
       content += "visitor.visit_#{class_name.downcase}_#{base_name}(self)\n"
       content += "end\n"

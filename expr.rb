@@ -27,15 +27,21 @@ class Expr
 
   class Binary < Expr
     include Visitor
-    attr_reader :expr_left
-    attr_reader :token_operator, :expr_right
+    #: Expr
+    attr_reader :left
+    #: Token
+    attr_reader :operator
+    #: Expr
+    attr_reader :right
 
-    def initialize(expr_left, token_operator, expr_right)
-      @expr_left = expr_left
-      @token_operator = token_operator
-      @expr_right = expr_right
+    #: (Expr, Token, Expr) -> void
+    def initialize(left, operator, right)
+      @left = left #: Expr
+      @operator = operator #: Token
+      @right = right #: Expr
     end
 
+    #: (Expr) -> void
     def accept(visitor)
       visitor.visit_binary_expr(self)
     end
@@ -43,12 +49,15 @@ class Expr
 
   class Grouping < Expr
     include Visitor
-    attr_reader :expr_expression
+    #: Expr
+    attr_reader :expression
 
-    def initialize(expr_expression)
-      @expr_expression = expr_expression
+    #: (Expr) -> void
+    def initialize(expression)
+      @expression = expression #: Expr
     end
 
+    #: (Expr) -> void
     def accept(visitor)
       visitor.visit_grouping_expr(self)
     end
@@ -56,12 +65,15 @@ class Expr
 
   class Literal < Expr
     include Visitor
-    attr_reader :object_value
+    #: Object
+    attr_reader :value
 
-    def initialize(object_value)
-      @object_value = object_value
+    #: (Object) -> void
+    def initialize(value)
+      @value = value #: Object
     end
 
+    #: (Expr) -> void
     def accept(visitor)
       visitor.visit_literal_expr(self)
     end
@@ -69,14 +81,18 @@ class Expr
 
   class Unary < Expr
     include Visitor
-    attr_reader :token_operator
-    attr_reader :expr_right
+    #: Token
+    attr_reader :operator
+    #: Expr
+    attr_reader :right
 
-    def initialize(token_operator, expr_right)
-      @token_operator = token_operator
-      @expr_right = expr_right
+    #: (Token, Expr) -> void
+    def initialize(operator, right)
+      @operator = operator #: Token
+      @right = right #: Expr
     end
 
+    #: (Expr) -> void
     def accept(visitor)
       visitor.visit_unary_expr(self)
     end

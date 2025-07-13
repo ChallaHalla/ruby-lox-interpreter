@@ -15,5 +15,8 @@ Style/Documentation:
 Naming/PredicatePrefix:
    Enabled: false
 
+Layout/LeadingCommentSpace:
+   Enabled: false
+
 plugins:
   - rubocop-sorbet
