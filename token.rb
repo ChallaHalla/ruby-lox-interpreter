@@ -5,6 +5,14 @@ class Token
 
   #: String
   attr_reader :lexeme
+  #: TokenType
+  attr_reader :type
+
+  #: Object
+  attr_reader :literal
+
+  #: Integer
+  attr_reader :line
 
   #: (type: TokenType, lexeme: String, literal: Object, line: Integer) -> void
   def initialize(type:, lexeme:, literal:, line:)

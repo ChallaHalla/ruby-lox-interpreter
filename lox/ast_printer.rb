@@ -13,24 +13,24 @@ class AstPrinter
     expr.accept(self)
   end
 
-  #: (Binary) -> void
+  #: (Expr::Binary) -> void
   def visit_binary_expr(expr)
     parenthesize(expr.token_operator.lexeme, expr.expr_left, expr.expr_right)
   end
 
-  #: (Grouping) -> void
+  #: (Expr::Grouping) -> void
   def visit_grouping_expr(expr)
     parenthesize('group', expr.expr_expression)
   end
 
-  #: (Literal) -> void
+  #: (Expr::Literal) -> void
   def visit_literal_expr(expr)
     return 'nil' if expr.object_value.nil?
 
     expr.object_value.to_s
   end
 
-  #: (Unary) -> void
+  #: (Expr::Unary) -> void
   def visit_unary_expr(expr)
     parenthesize(expr.token_operator.lexeme, expr.expr_right)
   end
