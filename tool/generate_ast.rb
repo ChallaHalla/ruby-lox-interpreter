@@ -17,6 +17,20 @@ class GenerateAst
 
       exec("rubocop -A #{output_dir}/expr.rb")
     end
+    private
+
+    class Attribute
+      #: String
+      attr_reader :name
+      #: String
+      attr_reader :type
+
+      #: (String, String) -> void
+      def initialize(name, type)
+        @name = name 
+        @type = type
+      end
+    end
 
     #: (output_dir: String, base_name: String, types: Array[String]) -> void
     def define_ast(output_dir:, base_name:, types:)
@@ -69,17 +83,25 @@ class GenerateAst
       types.each do |type|
         class_name = type.split(':')[0]&.strip
         fields = type.split(':')[1]&.strip
+        
         # Here we want to get the fields and types together
         # to build attr_readers with type info
         next unless class_name && fields
+        attributes = fields.split(",").map do |str|
+          attr_type, name = str.split(" ")
+          next unless attr_type && name
+          Attribute.new(name, attr_type)
+        end.compact
 
-        content += build_type_class(base_name:, class_name:, types: fields.split(","))
+        content += build_type_class(base_name:, class_name:, attributes:)
       end
       content
     end
 
-    #: (base_name: String, class_name: String, types: Array[String]) -> String
-    def build_type_class(base_name:, class_name:, types:)
+    
+
+    #: (base_name: String, class_name: String, attributes: Array[Attribute]) -> String
+    def build_type_class(base_name:, class_name:, attributes:)
       content = "class #{class_name} < #{base_name.capitalize} \n"
       content += "include Visitor \n"
 
@@ -89,20 +111,18 @@ class GenerateAst
       field_names = []
       sig_types = []
 
-      types.each do |type|
-        sig_type, field_name = type.split(" ")
-        content += "#: #{sig_type}\n"
-        content += "attr_reader :#{field_name}\n"
-        field_names << field_name
-        sig_types << sig_type
+      attributes.each do |attr|
+        content += "#: #{attr.type}\n"
+        content += "attr_reader :#{attr.name}\n"
+        field_names << attr.name
+        sig_types << attr.type
       end
       
       content += "#: (#{sig_types.join(", ")}) -> void\n"
       content += "def initialize(#{field_names.join(", ")})\n"
 
-      types.each do |type|
-        sig_type, field_name = type.split(" ")
-        content += "@#{field_name} = #{field_name} #: #{sig_type}\n"
+      attributes.each do |attr|
+        content += "@#{attr.name} = #{attr.name} #: #{attr.type}\n"
       end
 
       content += "end\n"
