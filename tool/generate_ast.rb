@@ -17,6 +17,20 @@ class GenerateAst
 
       exec("rubocop -A #{output_dir}/expr.rb")
     end
+    private
+
+    class Attribute
+      #: String
+      attr_reader :name
+      #: String
+      attr_reader :type
+
+      #: (String, String) -> void
+      def initialize(name, type)
+        @name = name 
+        @type = type
+      end
+    end
 
     #: (output_dir: String, base_name: String, types: Array[String]) -> void
     def define_ast(output_dir:, base_name:, types:)
@@ -69,32 +83,48 @@ class GenerateAst
       types.each do |type|
         class_name = type.split(':')[0]&.strip
         fields = type.split(':')[1]&.strip
-        snake_case_fields = fields&.split(', ')&.map do |field|
-          field.downcase.gsub(' ', '_')
-        end
+        
+        # Here we want to get the fields and types together
+        # to build attr_readers with type info
         next unless class_name && fields
+        attributes = fields.split(",").map do |str|
+          attr_type, name = str.split(" ")
+          next unless attr_type && name
+          Attribute.new(name, attr_type)
+        end.compact
 
-        content += build_type_class(base_name:, class_name:, fields: snake_case_fields)
+        content += build_type_class(base_name:, class_name:, attributes:)
       end
       content
     end
 
-    #: (base_name: String, class_name: String, fields: Array[String]) -> String
-    def build_type_class(base_name:, class_name:, fields:)
+    
+
+    #: (base_name: String, class_name: String, attributes: Array[Attribute]) -> String
+    def build_type_class(base_name:, class_name:, attributes:)
       content = "class #{class_name} < #{base_name.capitalize} \n"
       content += "include Visitor \n"
-      
-      fields_list = fields.join(', ')
-      fields.each do |field|
-        content += "attr_reader :#{field}\n"
+
+      field_names = []
+      sig_types = []
+
+      attributes.each do |attr|
+        content += "#: #{attr.type}\n"
+        content += "attr_reader :#{attr.name}\n"
+        field_names << attr.name
+        sig_types << attr.type
       end
       
-      content += "def initialize(#{fields_list})\n"
-      fields.each do |field|
-        content += "@#{field} = #{field}\n"
+      content += "#: (#{sig_types.join(", ")}) -> void\n"
+      content += "def initialize(#{field_names.join(", ")})\n"
+
+      attributes.each do |attr|
+        content += "@#{attr.name} = #{attr.name} #: #{attr.type}\n"
       end
+
       content += "end\n"
 
+      content += "#: (Expr) -> void\n"
       content += "def accept(visitor)\n"
       content += "visitor.visit_#{class_name.downcase}_#{base_name}(self)\n"
       content += "end\n"
