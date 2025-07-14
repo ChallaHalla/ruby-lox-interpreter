@@ -147,7 +147,7 @@ class Scanner
 
     Lox.error(line: @line, message: 'Unterminated String.') if is_at_end?
     advance
-    string_value = @source[start + 1, current - 2]
+    string_value = @source[start + 1.. current - 2]
     add_token(type: TokenType::STRING, literal: string_value)
   end
 
@@ -170,7 +170,7 @@ class Scanner
   #: () -> void
   def identifier
     advance while is_alpha_numeric?(peek)
-    text = @source[@start..@current]
+    text = @source[@start..@current-1]
     raise 'text not found' if text.nil?
 
     type = self.class.keywords[text] || TokenType::IDENTIFIER

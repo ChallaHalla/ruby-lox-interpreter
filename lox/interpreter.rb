@@ -1,14 +1,17 @@
 # typed: strict
 require_relative "../expr"
+require_relative "../stmt"
 require_relative "runtime_error"
 class Interpreter
   include Expr::Visitor
+  include Stmt::Visitor
 
-  #: (Expr) -> void
-  def interpret(expr)
+  #: (Array[Stmt]) -> void
+  def interpret(statements)
     begin
-      value = evaluate(expr)
-      puts stringify(value)
+      statements.each do |stmt|
+        execute(stmt)
+      end
     rescue RuntimeError => e
       Lox.runtime_error(e)
     end
@@ -97,7 +100,25 @@ class Interpreter
     end
   end
 
+  #: (Stmt::Print) -> void
+  def visit_print_stmt(stmt)
+    value = evaluate(stmt.expression)
+    puts stringify(value)
+  end
+
+#: (Stmt::Expression) -> void
+  def visit_expression_stmt(stmt)
+    evaluate(stmt.expression)
+  end
+
+
+
   private
+
+  #: (Stmt) -> void
+  def execute(stmt)
+    stmt.accept(self)
+  end
 
   #: (Object) -> String
   def stringify(value)

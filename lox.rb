@@ -40,15 +40,17 @@ class Lox
     scanner = Scanner.new(source:)
     tokens = scanner.scan_tokens(source)
     parser = Parser.new(tokens)
-    expression = parser.parse
-    if self.class.had_error || expression.nil?
+
+    statements = parser.parse
+
+    if self.class.had_error || statements.nil?
       if self.class.running_prompt
         self.class.had_error = false
       end
       return
     end
 
-    self.class.interpreter.interpret(expression)
+    self.class.interpreter.interpret(statements)
   end
 
   class << self

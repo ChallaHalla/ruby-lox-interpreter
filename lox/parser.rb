@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 # typed: true
 
-require_relative '../token_type'
-
 class Parser
   class ParseError < StandardError; end
 
@@ -12,16 +10,61 @@ class Parser
     @current = 0 # : Integer
   end
 
-  #: () -> Expr?
+  #: () -> Array[Stmt]?
   def parse
-    begin
-      return expression
-    rescue ParseError 
-      return
+    # NOTE: Parse errors are not handled right now
+    statements = [] #: Array[Stmt]
+    while !is_at_end? do 
+      statements << declaration
     end
+    return statements
   end
 
   private
+
+  def declaration
+    begin
+      return var_declaration if match(TokenType::VAR)
+      statement
+    rescue ParseError
+      synchronize
+      nil
+    end
+  end
+
+  def var_declaration
+    name = consume(TokenType::IDENTIFIER, "Expect variable name.") #: as Token
+    initializer = nil
+    if match(TokenType::EQUAL)
+      initializer = expression
+    end
+
+    consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.")
+    Stmt::Var.new(name, initializer)
+  end
+
+  #: () -> Stmt
+  def statement
+    return print_statement if match(TokenType::PRINT)
+    expression_statement
+  end
+
+  def declaration
+  end
+
+  #: () -> Stmt
+  def print_statement
+    value = expression
+    consume(TokenType::SEMICOLON, "Expect ';' after value.")
+    Stmt::Print.new(value)
+  end
+
+  #: () -> Stmt
+  def expression_statement
+    expr = expression
+    consume(TokenType::SEMICOLON, "Expect ';' after value.")
+    Stmt::Expression.new(expr)
+  end
 
   # : () -> Expr
   def expression
@@ -99,14 +142,18 @@ class Parser
       expr = expression
       consume(TokenType::RIGHT_PAREN, "Expect ')' after expression")
       Expr::Grouping.new(expr)
+    elsif match(TokenType::IDENTIFIER)
+      Expr::Variable.new(previous)
     else
       raise error(peek(), "Expected expression.")
     end
   end
 
-  #: (TokenType, String) -> void
+  #: (TokenType, String) -> Token?
   def consume(token_type, error_message)
-    return advance unless check(token_type)
+    if check(token_type)
+      return advance 
+    end
 
     raise error(peek, error_message)
   end

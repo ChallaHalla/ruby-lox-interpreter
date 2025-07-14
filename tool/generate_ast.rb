@@ -13,9 +13,16 @@ class GenerateAst
       define_ast(output_dir:, base_name: 'expr', types:  ['Binary   : Expr left, Token operator, Expr right',
                                                           'Grouping : Expr expression',
                                                           'Literal  : Object value',
+                                                          'Variable : Token name',
                                                           'Unary    : Token operator, Expr right'])
 
-      exec("rubocop -A #{output_dir}/expr.rb")
+      # TODO need to extract definting the visitor module from this method so 
+      # that it isn't defined twice
+      define_ast(output_dir:, base_name: 'stmt', types:  [ "Expression : Expr expression", 
+                                                           "Print      : Expr expression",
+                                                           "Var   : Token name, Expr initializer" ])
+
+      exec(" rubocop -A #{output_dir}/expr.rb #{output_dir}/stmt.rb")
     end
     private
 

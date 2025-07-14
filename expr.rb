@@ -20,6 +20,10 @@ class Expr
       raise MethodNotImplemented
     end
 
+    def visit_variable_expr
+      raise MethodNotImplemented
+    end
+
     def visit_unary_expr
       raise MethodNotImplemented
     end
@@ -76,6 +80,22 @@ class Expr
     #: (Expr) -> void
     def accept(visitor)
       visitor.visit_literal_expr(self)
+    end
+  end
+
+  class Variable < Expr
+    include Visitor
+    #: Token
+    attr_reader :name
+
+    #: (Token) -> void
+    def initialize(name)
+      @name = name #: Token
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_variable_expr(self)
     end
   end
 
