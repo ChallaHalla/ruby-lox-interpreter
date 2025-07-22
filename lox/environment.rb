@@ -16,7 +16,7 @@ class Environment
   #: (Token) -> Object
   def get(name)
     if @values.has_key?(name.lexeme)
-      @values[name.lexeme]
+      return @values[name.lexeme]
     end
 
     raise RuntimeError.new(name, "Undefined variable '" + name.lexeme + "'.")

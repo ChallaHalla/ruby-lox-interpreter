@@ -4,10 +4,10 @@
 class Parser
   class ParseError < StandardError; end
 
-  # : (Array[Token]) -> void
+  #: (Array[Token]) -> void
   def initialize(tokens)
     @tokens = tokens
-    @current = 0 # : Integer
+    @current = 0 #: Integer
   end
 
   #: () -> Array[Stmt]?
@@ -15,14 +15,16 @@ class Parser
     # NOTE: Parse errors are not handled right now
     statements = [] #: Array[Stmt]
     while !is_at_end? do 
-      statements << declaration
+      result = get_declaration
+      statements << result if result
     end
     return statements
   end
 
   private
 
-  def declaration
+  #: () -> Stmt?
+  def get_declaration
     begin
       return var_declaration if match(TokenType::VAR)
       statement
@@ -32,6 +34,7 @@ class Parser
     end
   end
 
+  #: () -> Stmt
   def var_declaration
     name = consume(TokenType::IDENTIFIER, "Expect variable name.") #: as Token
     initializer = nil
@@ -66,12 +69,12 @@ class Parser
     Stmt::Expression.new(expr)
   end
 
-  # : () -> Expr
+  #: () -> Expr
   def expression
     equality
   end
 
-  # : () -> Expr
+  #: () -> Expr
   def equality
     expr = comparison
     while match(TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL)
@@ -83,7 +86,7 @@ class Parser
     expr
   end
 
-  # : () -> Expr
+  #: () -> Expr
   def comparison
     expr = term
     while match(TokenType::GREATER, TokenType::GREATER_EQUAL, TokenType::LESS, TokenType::LESS_EQUAL)
@@ -94,7 +97,7 @@ class Parser
     expr
   end
 
-  # : () -> Expr
+  #: () -> Expr
   def term
     expr = factor
     while match(TokenType::MINUS, TokenType::PLUS)
@@ -105,7 +108,7 @@ class Parser
     expr
   end
 
-  # : () -> Expr
+  #: () -> Expr
   def factor
     expr = unary
     while match(TokenType::SLASH, TokenType::STAR)
@@ -117,7 +120,7 @@ class Parser
     expr
   end
 
-  # : () -> Expr::Literal | Expr::Grouping | Expr::Unary
+  #: () -> Expr::Literal | Expr::Grouping | Expr::Unary
   def unary
     if match(TokenType::BANG, TokenType::MINUS)
       operator = previous
@@ -128,7 +131,7 @@ class Parser
     end
   end
 
-  # : () -> Expr::Literal | Expr::Grouping
+  #: () -> Expr::Literal | Expr::Grouping
   def primary
     if match(TokenType::TRUE)
       Expr::Literal.new(true)
@@ -182,7 +185,7 @@ class Parser
     end
   end
 
-  # : (*TokenType) -> bool
+  #: (*TokenType) -> bool
   def match(*token_types)
     token_types.each do |type|
       if check(type)
@@ -194,33 +197,33 @@ class Parser
     false
   end
 
-  # : (TokenType) -> bool
+  #: (TokenType) -> bool
   def check(type)
     return false if is_at_end?
 
     peek.type == type
   end
 
-  # : () -> Token
+  #: () -> Token
   def advance
     @current += 1 unless is_at_end?
 
     previous
   end
 
-  # : () -> bool
+  #: () -> bool
   def is_at_end?
     peek.type == TokenType::EOF
   end
 
-  # : () -> Token
+  #: () -> Token
   def peek
     raise 'Invalid token index.' if @current >= @tokens.length
 
     @tokens[@current]
   end
 
-  # : () -> Token
+  #: () -> Token
   def previous
     raise 'Invalid token index.' if @current > @tokens.length
     raise 'Invalid token index.' if @current <= 0
