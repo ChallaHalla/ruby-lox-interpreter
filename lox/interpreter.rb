@@ -1,10 +1,19 @@
 # typed: strict
 require_relative "../expr"
 require_relative "../stmt"
+require_relative "./environment"
+
 require_relative "runtime_error"
 class Interpreter
   include Expr::Visitor
   include Stmt::Visitor
+  #: Environment
+  attr_reader :environment
+
+  #: () -> void
+  def initialize
+    @environment = Environment.new() #: Environment
+  end
 
   #: (Array[Stmt]) -> void
   def interpret(statements)
@@ -40,6 +49,11 @@ class Interpreter
     when TokenType::BANG
       return !is_truthy?(right)
     end
+  end
+
+  #: (Expr::Variable) -> Object
+  def visit_variable_expr(expr)
+    environment.get(expr.name)
   end
 
   #: (Expr::Binary) -> Object
@@ -104,6 +118,17 @@ class Interpreter
   def visit_print_stmt(stmt)
     value = evaluate(stmt.expression)
     puts stringify(value)
+  end
+
+  #: (Stmt::Var) -> void
+  def visit_var_stmt(stmt)
+    value = nil
+    if !stmt.initializer.nil?
+      value = evaluate(stmt.initializer)
+    end
+
+    self.environment.define(stmt.name.lexeme, value)
+    nil
   end
 
 #: (Stmt::Expression) -> void
