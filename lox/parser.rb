@@ -15,7 +15,7 @@ class Parser
     # NOTE: Parse errors are not handled right now
     statements = [] #: Array[Stmt]
     while !is_at_end? do 
-      result = get_declaration
+      result = declaration
       statements << result if result
     end
     return statements
@@ -24,7 +24,7 @@ class Parser
   private
 
   #: () -> Stmt?
-  def get_declaration
+  def declaration
     begin
       return var_declaration if match(TokenType::VAR)
       statement
@@ -49,10 +49,10 @@ class Parser
   #: () -> Stmt
   def statement
     return print_statement if match(TokenType::PRINT)
-    expression_statement
-  end
 
-  def declaration
+    return Stmt::Block.new(block) if match(TokenType::LEFT_BRACE)
+
+    expression_statement
   end
 
   #: () -> Stmt
@@ -69,9 +69,37 @@ class Parser
     Stmt::Expression.new(expr)
   end
 
+  #: () -> Array[Stmt]
+  def block
+    statements = []
+    while (!check(TokenType::RIGHT_BRACE) && !is_at_end?) do
+      statements << declaration
+    end
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after block.")
+    return statements
+  end
+
   #: () -> Expr
   def expression
-    equality
+    assignment
+  end
+
+  #: () -> Expr
+  def assignment
+    expr = equality
+    if match(TokenType::EQUAL)
+      equals = previous
+      value = assignment
+
+      if expr.is_a?(Expr::Variable)
+        name = expr.name
+        return Expr::Assign.new(name, value)
+      end
+      error(equals, "Invalid assignment target."); 
+    end
+
+    expr
   end
 
   #: () -> Expr

@@ -131,18 +131,42 @@ class Interpreter
     nil
   end
 
+  #: (Expr::Assign) -> Object
+  def visit_assign_expr(expr)
+    value = evaluate(expr.value)
+    environment.assign(expr.name, value);
+    value
+  end
+
+
 #: (Stmt::Expression) -> void
   def visit_expression_stmt(stmt)
     evaluate(stmt.expression)
   end
 
-
+  #: (Stmt::Block) -> void
+  def visit_block_stmt(stmt)
+    execute_block(stmt.statements, Environment.new(@environment))
+    return nil
+  end
 
   private
 
   #: (Stmt) -> void
   def execute(stmt)
     stmt.accept(self)
+  end
+
+  def execute_block(statements, environment)
+    previous = @environment
+    begin 
+      @environment = environment
+      statements.each do |statement|
+        execute(statement)
+      end
+    ensure
+      @environment = previous
+    end
   end
 
   #: (Object) -> String

@@ -10,7 +10,8 @@ class GenerateAst
 
       output_dir = ARGV[0]
 
-      define_ast(output_dir:, base_name: 'expr', types:  ['Binary   : Expr left, Token operator, Expr right',
+      define_ast(output_dir:, base_name: 'expr', types:  ["Assign   : Token name, Expr value", 
+                                                          'Binary   : Expr left, Token operator, Expr right',
                                                           'Grouping : Expr expression',
                                                           'Literal  : Object value',
                                                           'Variable : Token name',
@@ -18,7 +19,8 @@ class GenerateAst
 
       # TODO need to extract definting the visitor module from this method so 
       # that it isn't defined twice
-      define_ast(output_dir:, base_name: 'stmt', types:  [ "Expression : Expr expression", 
+      define_ast(output_dir:, base_name: 'stmt', types:  [ "Block      : Array[Stmt] statements", 
+                                                           "Expression : Expr expression", 
                                                            "Print      : Expr expression",
                                                            "Var   : Token name, Expr initializer" ])
 

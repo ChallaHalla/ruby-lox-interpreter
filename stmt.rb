@@ -8,6 +8,10 @@ class Stmt
   def accept(_visitor) = raise(MethodNotImplemented)
 
   module Visitor
+    def visit_block_stmt
+      raise MethodNotImplemented
+    end
+
     def visit_expression_stmt
       raise MethodNotImplemented
     end
@@ -18,6 +22,22 @@ class Stmt
 
     def visit_var_stmt
       raise MethodNotImplemented
+    end
+  end
+
+  class Block < Stmt
+    include Visitor
+    #: Array[Stmt]
+    attr_reader :statements
+
+    #: (Array[Stmt]) -> void
+    def initialize(statements)
+      @statements = statements #: Array[Stmt]
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_block_stmt(self)
     end
   end
 
