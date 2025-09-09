@@ -1,11 +1,12 @@
 # typed: strict
+# frozen_string_literal: true
 
 require 'sorbet-runtime'
 require './scanner'
 require_relative 'lox/ast_printer'
 require_relative 'lox/parser'
-require_relative "lox/runtime_error"
-require_relative "lox/interpreter"
+require_relative 'lox/runtime_error'
+require_relative 'lox/interpreter'
 
 class Lox
   @had_error = false #: bool
@@ -44,9 +45,7 @@ class Lox
     statements = parser.parse
 
     if self.class.had_error || statements.nil?
-      if self.class.running_prompt
-        self.class.had_error = false
-      end
+      self.class.had_error = false if self.class.running_prompt
       return
     end
 
@@ -72,12 +71,11 @@ class Lox
     #: (Token, String) -> void
     def error_for_token(token, message)
       if token.type == TokenType::EOF
-        report(line: token.line, where:" at end", message: message)
+        report(line: token.line, where: ' at end', message: message)
       else
-        report(line: token.line, where:" at '#{token.lexeme}'", message: message)
+        report(line: token.line, where: " at '#{token.lexeme}'", message: message)
       end
     end
-
 
     #: (RuntimeError) -> void
     def runtime_error(err)
@@ -95,7 +93,7 @@ class Lox
   #: () -> void
   def run_prompt
     self.class.running_prompt = true #: bool
-    while true
+    loop do
       print '> '
       input = gets
       break if input.nil?

@@ -1,9 +1,11 @@
 # typed: strict
-require_relative "../expr"
-require_relative "../stmt"
-require_relative "./environment"
+# frozen_string_literal: true
 
-require_relative "runtime_error"
+require_relative '../expr'
+require_relative '../stmt'
+require_relative './environment'
+
+require_relative 'runtime_error'
 class Interpreter
   include Expr::Visitor
   include Stmt::Visitor
@@ -12,23 +14,21 @@ class Interpreter
 
   #: () -> void
   def initialize
-    @environment = Environment.new() #: Environment
+    @environment = Environment.new #: Environment
   end
 
   #: (Array[Stmt]) -> void
   def interpret(statements)
-    begin
-      statements.each do |stmt|
-        execute(stmt)
-      end
-    rescue RuntimeError => e
-      Lox.runtime_error(e)
+    statements.each do |stmt|
+      execute(stmt)
     end
+  rescue RuntimeError => e
+    Lox.runtime_error(e)
   end
 
   #: (Expr::Literal) -> Object
   def visit_literal_expr(expr)
-    return expr.value
+    expr.value
   end
 
   #: (Expr::Grouping) -> Object
@@ -45,9 +45,9 @@ class Interpreter
       # which will map to a Ruby type from visit_literal_expr
       check_number_operand(expr.operator, right)
       right = right #: as Numeric
-      -1 * right 
+      -1 * right
     when TokenType::BANG
-      return !is_truthy?(right)
+      !is_truthy?(right)
     end
   end
 
@@ -78,7 +78,7 @@ class Interpreter
       elsif left.is_a?(String) && right.is_a?(String)
         left + right
       else
-        raise RuntimeError.new(expr.operator, "Operands must be two numbers or two strings.")
+        raise RuntimeError.new(expr.operator, 'Operands must be two numbers or two strings.')
       end
     when TokenType::MINUS
       check_number_operands(expr.operator, left, right)
@@ -106,7 +106,7 @@ class Interpreter
       right = right #: as Numeric
       left <= right
     when TokenType::BANG_EQUAL
-      # This is slightly different from the book because 
+      # This is slightly different from the book because
       # comparisons on NilClass are easier in Ruby
       left != right
     when TokenType::EQUAL_EQUAL
@@ -123,23 +123,20 @@ class Interpreter
   #: (Stmt::Var) -> void
   def visit_var_stmt(stmt)
     value = nil
-    if !stmt.initializer.nil?
-      value = evaluate(stmt.initializer)
-    end
+    value = evaluate(stmt.initializer) unless stmt.initializer.nil?
 
-    self.environment.define(stmt.name.lexeme, value)
+    environment.define(stmt.name.lexeme, value)
     nil
   end
 
   #: (Expr::Assign) -> Object
   def visit_assign_expr(expr)
     value = evaluate(expr.value)
-    environment.assign(expr.name, value);
+    environment.assign(expr.name, value)
     value
   end
 
-
-#: (Stmt::Expression) -> void
+  #: (Stmt::Expression) -> void
   def visit_expression_stmt(stmt)
     evaluate(stmt.expression)
   end
@@ -147,7 +144,7 @@ class Interpreter
   #: (Stmt::Block) -> void
   def visit_block_stmt(stmt)
     execute_block(stmt.statements, Environment.new(@environment))
-    return nil
+    nil
   end
 
   private
@@ -159,7 +156,7 @@ class Interpreter
 
   def execute_block(statements, environment)
     previous = @environment
-    begin 
+    begin
       @environment = environment
       statements.each do |statement|
         execute(statement)
@@ -173,11 +170,11 @@ class Interpreter
   def stringify(value)
     case value
     when NilClass
-      "nil"
+      'nil'
     when Numeric
       str_value = value.to_s
-      if str_value.end_with?(".0")
-        return str_value[0, str_value.length-2] #: as String
+      if str_value.end_with?('.0')
+        str_value[0, str_value.length - 2] #: as String
       else
         str_value
       end
@@ -189,22 +186,24 @@ class Interpreter
   #: (Token, Object) -> void
   def check_number_operand(operator, operand)
     return if operand.is_a?(Numeric)
-    raise RuntimeError.new(operator, "Operand must be a number.")
+
+    raise RuntimeError.new(operator, 'Operand must be a number.')
   end
 
   #: (Token, Object, Object) -> void
   def check_number_operands(operator, left, right)
     return if left.is_a?(Numeric) && right.is_a?(Numeric)
-    raise RuntimeError.new(operator, "Operand must be a number.")
+
+    raise RuntimeError.new(operator, 'Operand must be a number.')
   end
-  
+
   #: (Object) -> bool
   def is_truthy?(value)
     case value
     when NilClass
       false
     when TrueClass, FalseClass
-      value 
+      value
     else
       true
     end
@@ -214,5 +213,4 @@ class Interpreter
   def evaluate(expr)
     expr.accept(self)
   end
-
 end

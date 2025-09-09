@@ -1,3 +1,6 @@
+# typed: false
+# frozen_string_literal: true
+
 class TokenType < T::Enum
   enums do
     LEFT_PAREN = new

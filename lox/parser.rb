@@ -1,5 +1,5 @@
-# frozen_string_literal: true
 # typed: true
+# frozen_string_literal: true
 
 class Parser
   class ParseError < StandardError; end
@@ -14,33 +14,30 @@ class Parser
   def parse
     # NOTE: Parse errors are not handled right now
     statements = [] #: Array[Stmt]
-    while !is_at_end? do 
+    until is_at_end?
       result = declaration
       statements << result if result
     end
-    return statements
+    statements
   end
 
   private
 
   #: () -> Stmt?
   def declaration
-    begin
-      return var_declaration if match(TokenType::VAR)
-      statement
-    rescue ParseError
-      synchronize
-      nil
-    end
+    return var_declaration if match(TokenType::VAR)
+
+    statement
+  rescue ParseError
+    synchronize
+    nil
   end
 
   #: () -> Stmt
   def var_declaration
-    name = consume(TokenType::IDENTIFIER, "Expect variable name.") #: as Token
+    name = consume(TokenType::IDENTIFIER, 'Expect variable name.') #: as Token
     initializer = nil
-    if match(TokenType::EQUAL)
-      initializer = expression
-    end
+    initializer = expression if match(TokenType::EQUAL)
 
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.")
     Stmt::Var.new(name, initializer)
@@ -72,12 +69,10 @@ class Parser
   #: () -> Array[Stmt]
   def block
     statements = []
-    while (!check(TokenType::RIGHT_BRACE) && !is_at_end?) do
-      statements << declaration
-    end
+    statements << declaration while !check(TokenType::RIGHT_BRACE) && !is_at_end?
 
     consume(TokenType::RIGHT_BRACE, "Expect '}' after block.")
-    return statements
+    statements
   end
 
   #: () -> Expr
@@ -96,7 +91,7 @@ class Parser
         name = expr.name
         return Expr::Assign.new(name, value)
       end
-      error(equals, "Invalid assignment target."); 
+      error(equals, 'Invalid assignment target.')
     end
 
     expr
@@ -176,15 +171,13 @@ class Parser
     elsif match(TokenType::IDENTIFIER)
       Expr::Variable.new(previous)
     else
-      raise error(peek(), "Expected expression.")
+      raise error(peek, 'Expected expression.')
     end
   end
 
   #: (TokenType, String) -> Token?
   def consume(token_type, error_message)
-    if check(token_type)
-      return advance 
-    end
+    return advance if check(token_type)
 
     raise error(peek, error_message)
   end
