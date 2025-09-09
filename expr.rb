@@ -8,6 +8,10 @@ class Expr
   def accept(_visitor) = raise(MethodNotImplemented)
 
   module Visitor
+    def visit_assign_expr
+      raise MethodNotImplemented
+    end
+
     def visit_binary_expr
       raise MethodNotImplemented
     end
@@ -20,8 +24,31 @@ class Expr
       raise MethodNotImplemented
     end
 
+    def visit_variable_expr
+      raise MethodNotImplemented
+    end
+
     def visit_unary_expr
       raise MethodNotImplemented
+    end
+  end
+
+  class Assign < Expr
+    include Visitor
+    #: Token
+    attr_reader :name
+    #: Expr
+    attr_reader :value
+
+    #: (Token, Expr) -> void
+    def initialize(name, value)
+      @name = name #: Token
+      @value = value #: Expr
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_assign_expr(self)
     end
   end
 
@@ -76,6 +103,22 @@ class Expr
     #: (Expr) -> void
     def accept(visitor)
       visitor.visit_literal_expr(self)
+    end
+  end
+
+  class Variable < Expr
+    include Visitor
+    #: Token
+    attr_reader :name
+
+    #: (Token) -> void
+    def initialize(name)
+      @name = name #: Token
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_variable_expr(self)
     end
   end
 

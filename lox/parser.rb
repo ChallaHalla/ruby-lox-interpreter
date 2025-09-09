@@ -1,34 +1,103 @@
-# frozen_string_literal: true
 # typed: true
-
-require_relative '../token_type'
+# frozen_string_literal: true
 
 class Parser
   class ParseError < StandardError; end
 
-  # : (Array[Token]) -> void
+  #: (Array[Token]) -> void
   def initialize(tokens)
     @tokens = tokens
-    @current = 0 # : Integer
+    @current = 0 #: Integer
   end
 
-  #: () -> Expr?
+  #: () -> Array[Stmt]?
   def parse
-    begin
-      return expression
-    rescue ParseError 
-      return
+    # NOTE: Parse errors are not handled right now
+    statements = [] #: Array[Stmt]
+    until is_at_end?
+      result = declaration
+      statements << result if result
     end
+    statements
   end
 
   private
 
-  # : () -> Expr
-  def expression
-    equality
+  #: () -> Stmt?
+  def declaration
+    return var_declaration if match(TokenType::VAR)
+
+    statement
+  rescue ParseError
+    synchronize
+    nil
   end
 
-  # : () -> Expr
+  #: () -> Stmt
+  def var_declaration
+    name = consume(TokenType::IDENTIFIER, 'Expect variable name.') #: as Token
+    initializer = nil
+    initializer = expression if match(TokenType::EQUAL)
+
+    consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.")
+    Stmt::Var.new(name, initializer)
+  end
+
+  #: () -> Stmt
+  def statement
+    return print_statement if match(TokenType::PRINT)
+
+    return Stmt::Block.new(block) if match(TokenType::LEFT_BRACE)
+
+    expression_statement
+  end
+
+  #: () -> Stmt
+  def print_statement
+    value = expression
+    consume(TokenType::SEMICOLON, "Expect ';' after value.")
+    Stmt::Print.new(value)
+  end
+
+  #: () -> Stmt
+  def expression_statement
+    expr = expression
+    consume(TokenType::SEMICOLON, "Expect ';' after value.")
+    Stmt::Expression.new(expr)
+  end
+
+  #: () -> Array[Stmt]
+  def block
+    statements = []
+    statements << declaration while !check(TokenType::RIGHT_BRACE) && !is_at_end?
+
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after block.")
+    statements
+  end
+
+  #: () -> Expr
+  def expression
+    assignment
+  end
+
+  #: () -> Expr
+  def assignment
+    expr = equality
+    if match(TokenType::EQUAL)
+      equals = previous
+      value = assignment
+
+      if expr.is_a?(Expr::Variable)
+        name = expr.name
+        return Expr::Assign.new(name, value)
+      end
+      error(equals, 'Invalid assignment target.')
+    end
+
+    expr
+  end
+
+  #: () -> Expr
   def equality
     expr = comparison
     while match(TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL)
@@ -40,7 +109,7 @@ class Parser
     expr
   end
 
-  # : () -> Expr
+  #: () -> Expr
   def comparison
     expr = term
     while match(TokenType::GREATER, TokenType::GREATER_EQUAL, TokenType::LESS, TokenType::LESS_EQUAL)
@@ -51,7 +120,7 @@ class Parser
     expr
   end
 
-  # : () -> Expr
+  #: () -> Expr
   def term
     expr = factor
     while match(TokenType::MINUS, TokenType::PLUS)
@@ -62,7 +131,7 @@ class Parser
     expr
   end
 
-  # : () -> Expr
+  #: () -> Expr
   def factor
     expr = unary
     while match(TokenType::SLASH, TokenType::STAR)
@@ -74,7 +143,7 @@ class Parser
     expr
   end
 
-  # : () -> Expr::Literal | Expr::Grouping | Expr::Unary
+  #: () -> Expr::Literal | Expr::Grouping | Expr::Unary
   def unary
     if match(TokenType::BANG, TokenType::MINUS)
       operator = previous
@@ -85,7 +154,7 @@ class Parser
     end
   end
 
-  # : () -> Expr::Literal | Expr::Grouping
+  #: () -> Expr::Literal | Expr::Grouping
   def primary
     if match(TokenType::TRUE)
       Expr::Literal.new(true)
@@ -99,14 +168,16 @@ class Parser
       expr = expression
       consume(TokenType::RIGHT_PAREN, "Expect ')' after expression")
       Expr::Grouping.new(expr)
+    elsif match(TokenType::IDENTIFIER)
+      Expr::Variable.new(previous)
     else
-      raise error(peek(), "Expected expression.")
+      raise error(peek, 'Expected expression.')
     end
   end
 
-  #: (TokenType, String) -> void
+  #: (TokenType, String) -> Token?
   def consume(token_type, error_message)
-    return advance unless check(token_type)
+    return advance if check(token_type)
 
     raise error(peek, error_message)
   end
@@ -135,7 +206,7 @@ class Parser
     end
   end
 
-  # : (*TokenType) -> bool
+  #: (*TokenType) -> bool
   def match(*token_types)
     token_types.each do |type|
       if check(type)
@@ -147,33 +218,33 @@ class Parser
     false
   end
 
-  # : (TokenType) -> bool
+  #: (TokenType) -> bool
   def check(type)
     return false if is_at_end?
 
     peek.type == type
   end
 
-  # : () -> Token
+  #: () -> Token
   def advance
     @current += 1 unless is_at_end?
 
     previous
   end
 
-  # : () -> bool
+  #: () -> bool
   def is_at_end?
     peek.type == TokenType::EOF
   end
 
-  # : () -> Token
+  #: () -> Token
   def peek
     raise 'Invalid token index.' if @current >= @tokens.length
 
     @tokens[@current]
   end
 
-  # : () -> Token
+  #: () -> Token
   def previous
     raise 'Invalid token index.' if @current > @tokens.length
     raise 'Invalid token index.' if @current <= 0

@@ -1,4 +1,5 @@
 # typed: strict
+# frozen_string_literal: true
 
 require 'sorbet-runtime'
 
@@ -6,17 +7,27 @@ class GenerateAst
   class << self
     #: () -> void
     def run
-      raise 'Usage: generate_ast <output directory>' if ARGV.length < 1
+      raise 'Usage: generate_ast <output directory>' if ARGV.empty?
 
       output_dir = ARGV[0]
 
-      define_ast(output_dir:, base_name: 'expr', types:  ['Binary   : Expr left, Token operator, Expr right',
+      define_ast(output_dir:, base_name: 'expr', types:  ['Assign   : Token name, Expr value',
+                                                          'Binary   : Expr left, Token operator, Expr right',
                                                           'Grouping : Expr expression',
                                                           'Literal  : Object value',
+                                                          'Variable : Token name',
                                                           'Unary    : Token operator, Expr right'])
 
-      exec("rubocop -A #{output_dir}/expr.rb")
+      # TODO: need to extract definting the visitor module from this method so
+      # that it isn't defined twice
+      define_ast(output_dir:, base_name: 'stmt', types:  ['Block      : Array[Stmt] statements',
+                                                          'Expression : Expr expression',
+                                                          'Print      : Expr expression',
+                                                          'Var   : Token name, Expr initializer'])
+
+      exec(" rubocop -A #{output_dir}/expr.rb #{output_dir}/stmt.rb")
     end
+
     private
 
     class Attribute
@@ -27,7 +38,7 @@ class GenerateAst
 
       #: (String, String) -> void
       def initialize(name, type)
-        @name = name 
+        @name = name
         @type = type
       end
     end
@@ -35,7 +46,7 @@ class GenerateAst
     #: (output_dir: String, base_name: String, types: Array[String]) -> void
     def define_ast(output_dir:, base_name:, types:)
       path = "#{output_dir}/#{base_name}.rb"
-      
+
       content = build_ast_content(base_name:, types:)
       File.write(path, content)
     end
@@ -44,7 +55,7 @@ class GenerateAst
     def build_ast_content(base_name:, types:)
       error_class = build_error_class
       # Separating start and end of Expr class so that
-      # it can wrap all other expression classes 
+      # it can wrap all other expression classes
       base_class_start = start_base_class(base_name)
       visitor_module = build_visitor_module(base_name:, types:)
       type_classes = build_type_classes(base_name:, types:)
@@ -54,14 +65,14 @@ class GenerateAst
 
     #: () -> String
     def build_error_class
-      "class MethodNotImplemented < StandardError\n" +
-      "end\n"
+      "class MethodNotImplemented < StandardError\n" \
+        "end\n"
     end
 
     #: (String) -> String
     def start_base_class(base_name)
-      "class #{base_name.capitalize} \n" +
-      "def accept(visitor); raise MethodNotImplemented;end\n"
+      "class #{base_name.capitalize} \n" \
+        "def accept(visitor); raise MethodNotImplemented;end\n"
     end
 
     #: (base_name: String, types: Array[String]) -> String
@@ -79,17 +90,19 @@ class GenerateAst
 
     #: (base_name: String, types: Array[String]) -> String
     def build_type_classes(base_name:, types:)
-      content = ""
+      content = ''
       types.each do |type|
         class_name = type.split(':')[0]&.strip
         fields = type.split(':')[1]&.strip
-        
+
         # Here we want to get the fields and types together
         # to build attr_readers with type info
         next unless class_name && fields
-        attributes = fields.split(",").map do |str|
-          attr_type, name = str.split(" ")
+
+        attributes = fields.split(',').map do |str|
+          attr_type, name = str.split(' ')
           next unless attr_type && name
+
           Attribute.new(name, attr_type)
         end.compact
 
@@ -97,8 +110,6 @@ class GenerateAst
       end
       content
     end
-
-    
 
     #: (base_name: String, class_name: String, attributes: Array[Attribute]) -> String
     def build_type_class(base_name:, class_name:, attributes:)
@@ -114,9 +125,9 @@ class GenerateAst
         field_names << attr.name
         sig_types << attr.type
       end
-      
-      content += "#: (#{sig_types.join(", ")}) -> void\n"
-      content += "def initialize(#{field_names.join(", ")})\n"
+
+      content += "#: (#{sig_types.join(', ')}) -> void\n"
+      content += "def initialize(#{field_names.join(', ')})\n"
 
       attributes.each do |attr|
         content += "@#{attr.name} = #{attr.name} #: #{attr.type}\n"
