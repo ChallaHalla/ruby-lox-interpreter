@@ -44,12 +44,77 @@ class Parser
   end
 
   #: () -> Stmt
+  def while_statement
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'while'.")
+    condition = expression
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after condition.")
+
+    body = statement
+    Stmt::While.new(condition, body)
+  end
+
+  #: () -> Stmt
   def statement
+    return for_statement if match(TokenType::FOR)
+    return if_statement if match(TokenType::IF)
     return print_statement if match(TokenType::PRINT)
+    return while_statement if match(TokenType::WHILE)
 
     return Stmt::Block.new(block) if match(TokenType::LEFT_BRACE)
 
     expression_statement
+  end
+
+  #: () -> Stmt
+  def for_statement
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'for'.")
+    initializer = nil #: Stmt
+    if match(TokenType::SEMICOLON)
+      initializer = nil 
+    elsif match(TokenType::VAR)
+      initializer = var_declaration
+    else
+      initializer = expression_statement
+    end
+
+    condition = nil #: Expr
+    if !check(TokenType::SEMICOLON)
+      condition = expression
+    end
+    consume(TokenType::SEMICOLON, "Expect ';' after loop condition.")
+
+    increment = nil #: Expr
+    if !check(TokenType::RIGHT_PAREN)
+      increment = expression
+    end
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after for clauses.")
+
+    body = statement
+    if !increment.nil?
+      body = Stmt::Block.new([body, Stmt::Expression.new(increment)])
+    end
+
+    condition = Expr::Literal.new(true) if condition.nil?
+    body = Stmt::While.new(condition, body)
+
+    if !initializer.nil?
+      body = Stmt::Block.new([initializer, body])
+    end
+
+    body
+  end
+
+  #: () -> Stmt
+  def if_statement
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.")
+    condition = expression
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after 'if condition'.")
+
+    then_branch = statement
+    else_branch = nil
+    else_branch = statement if match(TokenType::ELSE) 
+
+    Stmt::If.new(condition, then_branch, else_branch)
   end
 
   #: () -> Stmt
@@ -82,7 +147,8 @@ class Parser
 
   #: () -> Expr
   def assignment
-    expr = equality
+    expr = get_or
+
     if match(TokenType::EQUAL)
       equals = previous
       value = assignment
@@ -94,6 +160,29 @@ class Parser
       error(equals, 'Invalid assignment target.')
     end
 
+    expr
+  end
+
+  #: () -> Expr
+  def get_or
+    expr = get_and
+    while match(TokenType::OR)
+      operator = previous
+      right = get_and
+      expr = Expr::Logical.new(expr, operator, right)
+    end
+
+    expr
+  end
+
+  #: () -> Expr
+  def get_and
+    expr = equality
+    while match(TokenType::AND)
+      operator = previous
+      right = equality
+      expr = Expr::Logical.new(expr, operator, right)
+    end
     expr
   end
 

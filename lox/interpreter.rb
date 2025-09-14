@@ -31,6 +31,21 @@ class Interpreter
     expr.value
   end
 
+  #: (Expr::Logical) -> Object
+  def visit_logical_expr(expr)
+    left = evaluate(expr.left)
+    if expr.operator.type == TokenType::OR
+      # left being true for an OR means we can short circuit
+      return left if is_truthy?(left) 
+    else
+      # right being false for an AND means we can short circuit
+      return left if !is_truthy?(left) 
+    end
+
+    # If neither checked cases can short circuit, we must evaluate the RHS
+    return evaluate(expr.right)
+  end
+
   #: (Expr::Grouping) -> Object
   def visit_grouping_expr(expr)
     evaluate(expr.expression)
@@ -129,6 +144,14 @@ class Interpreter
     nil
   end
 
+  #: (Stmt::While) -> void
+  def visit_while_stmt(stmt)
+    while is_truthy?(evaluate(stmt.condition))
+      execute(stmt.body)
+    end
+    nil
+  end
+
   #: (Expr::Assign) -> Object
   def visit_assign_expr(expr)
     value = evaluate(expr.value)
@@ -139,6 +162,16 @@ class Interpreter
   #: (Stmt::Expression) -> void
   def visit_expression_stmt(stmt)
     evaluate(stmt.expression)
+  end
+
+  #: (Stmt::If) -> void
+  def visit_if_stmt(stmt)
+    if is_truthy?(evaluate(stmt.condition))
+      execute(stmt.then_branch)
+    elsif !stmt.else_branch.nil?
+      execute(stmt.else_branch)
+    end
+    nil
   end
 
   #: (Stmt::Block) -> void

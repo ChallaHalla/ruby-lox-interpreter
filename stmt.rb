@@ -16,11 +16,19 @@ class Stmt
       raise MethodNotImplemented
     end
 
+    def visit_if_stmt
+      raise MethodNotImplemented
+    end
+
     def visit_print_stmt
       raise MethodNotImplemented
     end
 
     def visit_var_stmt
+      raise MethodNotImplemented
+    end
+
+    def visit_while_stmt
       raise MethodNotImplemented
     end
   end
@@ -57,6 +65,28 @@ class Stmt
     end
   end
 
+  class If < Stmt
+    include Visitor
+    #: Expr
+    attr_reader :condition
+    #: Stmt
+    attr_reader :then_branch
+    #: Stmt
+    attr_reader :else_branch
+
+    #: (Expr, Stmt, Stmt) -> void
+    def initialize(condition, then_branch, else_branch)
+      @condition = condition #: Expr
+      @then_branch = then_branch #: Stmt
+      @else_branch = else_branch #: Stmt
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_if_stmt(self)
+    end
+  end
+
   class Print < Stmt
     include Visitor
     #: Expr
@@ -89,6 +119,25 @@ class Stmt
     #: (Expr) -> void
     def accept(visitor)
       visitor.visit_var_stmt(self)
+    end
+  end
+
+  class While < Stmt
+    include Visitor
+    #: Expr
+    attr_reader :condition
+    #: Stmt
+    attr_reader :body
+
+    #: (Expr, Stmt) -> void
+    def initialize(condition, body)
+      @condition = condition #: Expr
+      @body = body #: Stmt
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_while_stmt(self)
     end
   end
 end

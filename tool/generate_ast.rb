@@ -15,6 +15,7 @@ class GenerateAst
                                                           'Binary   : Expr left, Token operator, Expr right',
                                                           'Grouping : Expr expression',
                                                           'Literal  : Object value',
+                                                          'Logical  : Expr left, Token operator, Expr right',
                                                           'Variable : Token name',
                                                           'Unary    : Token operator, Expr right'])
 
@@ -22,8 +23,10 @@ class GenerateAst
       # that it isn't defined twice
       define_ast(output_dir:, base_name: 'stmt', types:  ['Block      : Array[Stmt] statements',
                                                           'Expression : Expr expression',
+                                                          'If : Expr condition, Stmt then_branch, Stmt else_branch',
                                                           'Print      : Expr expression',
-                                                          'Var   : Token name, Expr initializer'])
+                                                          'Var   : Token name, Expr initializer',
+                                                          'While   : Expr condition, Stmt body'])
 
       exec(" rubocop -A #{output_dir}/expr.rb #{output_dir}/stmt.rb")
     end
