@@ -24,6 +24,10 @@ class Expr
       raise MethodNotImplemented
     end
 
+    def visit_logical_expr
+      raise MethodNotImplemented
+    end
+
     def visit_variable_expr
       raise MethodNotImplemented
     end
@@ -103,6 +107,28 @@ class Expr
     #: (Expr) -> void
     def accept(visitor)
       visitor.visit_literal_expr(self)
+    end
+  end
+
+  class Logical < Expr
+    include Visitor
+    #: Expr
+    attr_reader :left
+    #: Token
+    attr_reader :operator
+    #: Expr
+    attr_reader :right
+
+    #: (Expr, Token, Expr) -> void
+    def initialize(left, operator, right)
+      @left = left #: Expr
+      @operator = operator #: Token
+      @right = right #: Expr
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_logical_expr(self)
     end
   end
 
