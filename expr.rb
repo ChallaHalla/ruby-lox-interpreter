@@ -16,6 +16,10 @@ class Expr
       raise MethodNotImplemented
     end
 
+    def visit_call_expr
+      raise MethodNotImplemented
+    end
+
     def visit_grouping_expr
       raise MethodNotImplemented
     end
@@ -75,6 +79,28 @@ class Expr
     #: (Expr) -> void
     def accept(visitor)
       visitor.visit_binary_expr(self)
+    end
+  end
+
+  class Call < Expr
+    include Visitor
+    #: Expr
+    attr_reader :callee
+    #: Token
+    attr_reader :paren
+    #: Array[Expr]
+    attr_reader :arguments
+
+    #: (Expr, Token, Array[Expr]) -> void
+    def initialize(callee, paren, arguments)
+      @callee = callee #: Expr
+      @paren = paren #: Token
+      @arguments = arguments #: Array[Expr]
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_call_expr(self)
     end
   end
 

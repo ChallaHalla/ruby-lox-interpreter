@@ -4,17 +4,39 @@
 require_relative '../expr'
 require_relative '../stmt'
 require_relative './environment'
+require_relative './lox_callable'
+require_relative './lox_function'
 
 require_relative 'runtime_error'
 class Interpreter
   include Expr::Visitor
   include Stmt::Visitor
   #: Environment
-  attr_reader :environment
+  attr_reader :globals
 
   #: () -> void
   def initialize
-    @environment = Environment.new #: Environment
+    @globals = Environment.new #: Environment
+    @environment = globals #: Environment
+    globals.define("clock", Class.new do 
+      include LoxCallable
+
+      #: () -> Integer
+      def arity
+        return 0
+      end
+
+      #: (Interpreter, Array[Object]) -> Object
+      def call(interpreter, arguments)
+        (Time.now.to_f * 1000).to_i
+      end
+      
+      #: () -> String
+      def to_s
+        "<native fn>"
+      end
+    end
+    )
   end
 
   #: (Array[Stmt]) -> void
@@ -57,7 +79,7 @@ class Interpreter
     case expr.operator.type
     when TokenType::MINUS
       # evaluate should eventually return a literal
-      # which will map to a Ruby type from visit_literal_expr
+      # w{hich will map to a Ruby type from visit_literal_expr
       check_number_operand(expr.operator, right)
       right = right #: as Numeric
       -1 * right
@@ -68,7 +90,7 @@ class Interpreter
 
   #: (Expr::Variable) -> Object
   def visit_variable_expr(expr)
-    environment.get(expr.name)
+    @environment.get(expr.name)
   end
 
   #: (Expr::Binary) -> Object
@@ -129,10 +151,36 @@ class Interpreter
     end
   end
 
+  #: (Expr::Call) -> Object
+  def visit_call_expr(expr)
+    callee = evaluate(expr.callee)
+    arguments = []
+    expr.arguments.each do |arg|
+      arguments << evaluate(arg)
+    end
+
+    if !callee.is_a?(LoxCallable)
+      raise RuntimeError.new(expr.paren, 'Can only call functions and classes.')
+    end
+    function = callee
+
+    if arguments.size != function.arity
+      raise RuntimeError.new(expr.paren, "Expected #{function.arity} arguments but got #{arguments.size}.")
+    end
+    function.call(self, arguments)
+  end
+
   #: (Stmt::Print) -> void
   def visit_print_stmt(stmt)
     value = evaluate(stmt.expression)
     puts stringify(value)
+  end
+
+  #: (Stmt::Return) -> void
+  def visit_return_stmt(stmt)
+    value = nil
+    value = evaluate(stmt.value) if !stmt.value.nil?
+    throw(:return_value, Return.new(value))
   end
 
   #: (Stmt::Var) -> void
@@ -140,7 +188,7 @@ class Interpreter
     value = nil
     value = evaluate(stmt.initializer) unless stmt.initializer.nil?
 
-    environment.define(stmt.name.lexeme, value)
+    @environment.define(stmt.name.lexeme, value)
     nil
   end
 
@@ -155,13 +203,20 @@ class Interpreter
   #: (Expr::Assign) -> Object
   def visit_assign_expr(expr)
     value = evaluate(expr.value)
-    environment.assign(expr.name, value)
+    @environment.assign(expr.name, value)
     value
   end
 
   #: (Stmt::Expression) -> void
   def visit_expression_stmt(stmt)
     evaluate(stmt.expression)
+  end
+
+  def visit_function_stmt(stmt)
+    function = LoxFunction.new(stmt, @environment)
+    @environment.define(stmt.name.lexeme, function)
+
+    nil
   end
 
   #: (Stmt::If) -> void
@@ -180,13 +235,6 @@ class Interpreter
     nil
   end
 
-  private
-
-  #: (Stmt) -> void
-  def execute(stmt)
-    stmt.accept(self)
-  end
-
   def execute_block(statements, environment)
     previous = @environment
     begin
@@ -199,6 +247,14 @@ class Interpreter
     end
   end
 
+  private
+
+  #: (Stmt) -> void
+  def execute(stmt)
+    stmt.accept(self)
+  end
+
+  
   #: (Object) -> String
   def stringify(value)
     case value

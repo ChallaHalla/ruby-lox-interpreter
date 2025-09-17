@@ -25,6 +25,7 @@ class Parser
 
   #: () -> Stmt?
   def declaration
+    return function("function") if match(TokenType::FUN)
     return var_declaration if match(TokenType::VAR)
 
     statement
@@ -58,6 +59,7 @@ class Parser
     return for_statement if match(TokenType::FOR)
     return if_statement if match(TokenType::IF)
     return print_statement if match(TokenType::PRINT)
+    return return_statement if match(TokenType::RETURN)
     return while_statement if match(TokenType::WHILE)
 
     return Stmt::Block.new(block) if match(TokenType::LEFT_BRACE)
@@ -125,10 +127,48 @@ class Parser
   end
 
   #: () -> Stmt
+  def return_statement
+    keyword = previous
+    value = nil
+    if !check(TokenType::SEMICOLON)
+      value = expression
+    end
+    consume(TokenType::SEMICOLON, "Expect ';' after value.")
+    Stmt::Return.new(keyword, value)
+  end
+
+
+
+  #: () -> Stmt
   def expression_statement
     expr = expression
     consume(TokenType::SEMICOLON, "Expect ';' after value.")
     Stmt::Expression.new(expr)
+  end
+
+  #: (String) -> Stmt::Function
+  def function(kind)
+    name = consume(TokenType::IDENTIFIER, "Expect #{kind} name.")
+    consume(TokenType::LEFT_PAREN, "Expect '(' after #{kind} name.")
+    parameters = []
+    if !check(TokenType::RIGHT_PAREN)
+      loop do 
+        if parameters.size >= 255
+          error(peek, "Can't have more than 255 parameters.")
+        end
+
+        parameters << consume(TokenType::IDENTIFIER, "Expect parameter name.")
+        if !match(TokenType::COMMA)
+          break
+        end
+      end
+    end
+
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.")
+
+    consume(TokenType::LEFT_BRACE, "Expect '{' before #{kind} body")
+    body = block
+    Stmt::Function.new(name, parameters, body)
   end
 
   #: () -> Array[Stmt]
@@ -239,8 +279,44 @@ class Parser
       right = unary
       Expr::Unary.new(operator, right)
     else
-      primary
+      call
     end
+  end
+
+  #: () -> Expr
+  def call
+    expr = primary 
+    while true do 
+      if match(TokenType::LEFT_PAREN)
+        expr = finish_call(expr)
+      else 
+        break;
+      end
+    end
+
+    expr
+  end
+
+  #: (Expr) -> Expr
+  def finish_call(callee)
+    # consume argument 
+    # if match comma
+    arguments = []
+    if !check(TokenType::RIGHT_PAREN)
+      loop do 
+        if arguments.size >= 255
+          error(peek, "Can't have more than 255 arguments.")
+        end
+        arguments << expression
+        if !match(TokenType::COMMA) 
+          break
+        end
+      end
+    end
+
+    paren = consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.")
+    Expr::Call.new(callee, paren, arguments)
+
   end
 
   #: () -> Expr::Literal | Expr::Grouping
