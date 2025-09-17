@@ -1,4 +1,5 @@
 require_relative './lox_callable'
+require_relative './return'
 
 class LoxFunction
   include LoxCallable
@@ -16,9 +17,11 @@ class LoxFunction
       environment.define(param.lexeme, arguments[i])
     end
 
-    interpreter.execute_block(@declaration.body, environment)
+    return_value = catch(:return_value) do
+      interpreter.execute_block(@declaration.body, environment)
+    end
 
-    nil
+    return return_value.value
   end
 
   def arity

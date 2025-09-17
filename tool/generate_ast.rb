@@ -27,6 +27,7 @@ class GenerateAst
                                                           'Function   : Token name, Array[Token] params, Array[Stmt] body',
                                                           'If         : Expr condition, Stmt then_branch, Stmt else_branch',
                                                           'Print      : Expr expression',
+                                                          'Return     : Token keyword, Expr value',
                                                           'Var        : Token name, Expr initializer',
                                                           'While      : Expr condition, Stmt body'])
 

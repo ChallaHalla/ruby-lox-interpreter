@@ -28,6 +28,10 @@ class Stmt
       raise MethodNotImplemented
     end
 
+    def visit_return_stmt
+      raise MethodNotImplemented
+    end
+
     def visit_var_stmt
       raise MethodNotImplemented
     end
@@ -126,6 +130,25 @@ class Stmt
     #: (Expr) -> void
     def accept(visitor)
       visitor.visit_print_stmt(self)
+    end
+  end
+
+  class Return < Stmt
+    include Visitor
+    #: Token
+    attr_reader :keyword
+    #: Expr
+    attr_reader :value
+
+    #: (Token, Expr) -> void
+    def initialize(keyword, value)
+      @keyword = keyword #: Token
+      @value = value #: Expr
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_return_stmt(self)
     end
   end
 

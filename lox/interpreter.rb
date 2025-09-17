@@ -176,6 +176,13 @@ class Interpreter
     puts stringify(value)
   end
 
+  #: (Stmt::Return) -> void
+  def visit_return_stmt(stmt)
+    value = nil
+    value = evaluate(stmt.value) if !stmt.value.nil?
+    throw(:return_value, Return.new(value))
+  end
+
   #: (Stmt::Var) -> void
   def visit_var_stmt(stmt)
     value = nil

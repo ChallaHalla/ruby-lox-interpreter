@@ -59,6 +59,7 @@ class Parser
     return for_statement if match(TokenType::FOR)
     return if_statement if match(TokenType::IF)
     return print_statement if match(TokenType::PRINT)
+    return return_statement if match(TokenType::RETURN)
     return while_statement if match(TokenType::WHILE)
 
     return Stmt::Block.new(block) if match(TokenType::LEFT_BRACE)
@@ -124,6 +125,19 @@ class Parser
     consume(TokenType::SEMICOLON, "Expect ';' after value.")
     Stmt::Print.new(value)
   end
+
+  #: () -> Stmt
+  def return_statement
+    keyword = previous
+    value = nil
+    if !check(TokenType::SEMICOLON)
+      value = expression
+    end
+    consume(TokenType::SEMICOLON, "Expect ';' after value.")
+    Stmt::Return.new(keyword, value)
+  end
+
+
 
   #: () -> Stmt
   def expression_statement
