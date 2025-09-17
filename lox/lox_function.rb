@@ -1,18 +1,20 @@
 require_relative './lox_callable'
 require_relative './return'
+require_relative './environment'
 
 class LoxFunction
   include LoxCallable
 
-  #: (Stmt::Function) -> LoxFunction
-  def initialize(declaration)
+  #: (Stmt::Function, Environment) -> LoxFunction
+  def initialize(declaration, closure)
     @declaration = declaration #: Stmt::Function
+    @closure = closure #: Environment
   end
   
 
   #: (Interpreter, Array[Object]) -> Object
   def call(interpreter, arguments)
-    environment = Environment.new(interpreter.globals)
+    environment = Environment.new(@closure)
     @declaration.params.each_with_index do |param, i|
       environment.define(param.lexeme, arguments[i])
     end
