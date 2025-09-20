@@ -1,4 +1,4 @@
-# typed: strict
+# typed: true
 # frozen_string_literal: true
 
 require_relative '../expr'
@@ -18,20 +18,18 @@ class Interpreter
   def initialize
     @globals = Environment.new #: Environment
     @environment = globals #: Environment
+    @locals = {} #: Hash[Expr, Integer]
     globals.define("clock", Class.new do 
       include LoxCallable
 
-      #: () -> Integer
       def arity
         return 0
       end
 
-      #: (Interpreter, Array[Object]) -> Object
       def call(interpreter, arguments)
         (Time.now.to_f * 1000).to_i
       end
       
-      #: () -> String
       def to_s
         "<native fn>"
       end
@@ -90,7 +88,17 @@ class Interpreter
 
   #: (Expr::Variable) -> Object
   def visit_variable_expr(expr)
-    @environment.get(expr.name)
+    look_up_variable(expr.name, expr)
+  end
+
+  #: (Token, Expr) -> Object
+  def look_up_variable(name, expr)
+    distance = @locals[expr]
+    if !distance.nil?
+      return @environment.get_at(distance, name.lexeme)
+    else
+      return @globals.get(name)
+    end
   end
 
   #: (Expr::Binary) -> Object
@@ -203,7 +211,13 @@ class Interpreter
   #: (Expr::Assign) -> Object
   def visit_assign_expr(expr)
     value = evaluate(expr.value)
-    @environment.assign(expr.name, value)
+    distance = @locals[expr]
+    if !distance.nil? 
+      @environment.assign_at(distance, expr.name, value)
+    else
+      globals.assign(expr.name, value)
+    end
+
     value
   end
 
@@ -247,14 +261,18 @@ class Interpreter
     end
   end
 
+  #: (Expr, Integer) -> void
+  def resolve(expr, depth)
+    @locals[expr] = depth
+  end
+
   private
 
   #: (Stmt) -> void
   def execute(stmt)
     stmt.accept(self)
   end
-
-  
+    
   #: (Object) -> String
   def stringify(value)
     case value

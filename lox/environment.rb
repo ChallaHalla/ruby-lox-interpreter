@@ -19,6 +19,26 @@ class Environment
     @values[name] = value
   end
 
+  #: (Integer) -> Environment
+  def ancestor(distance)
+    environment = self #: untyped
+    for i in 0...distance
+      environment = environment.enclosing
+    end
+    environment
+  end
+
+  #: (Integer, String) -> Object
+  def get_at(distance, name)
+    ancestor(distance).values[name]
+  end
+
+  #: (Integer, Token, Object) -> void
+  def assign_at(distance, name, value)
+    ancestor(distance).values[name.lexeme] = value
+    nil
+  end
+
   #: (Token) -> Object
   def get(name)
     return @values[name.lexeme] if @values.key?(name.lexeme)

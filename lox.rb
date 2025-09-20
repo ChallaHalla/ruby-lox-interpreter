@@ -7,6 +7,7 @@ require_relative 'lox/ast_printer'
 require_relative 'lox/parser'
 require_relative 'lox/runtime_error'
 require_relative 'lox/interpreter'
+require_relative 'lox/resolver'
 
 class Lox
   @had_error = false #: bool
@@ -46,6 +47,13 @@ class Lox
 
     if self.class.had_error || statements.nil?
       self.class.had_error = false if self.class.running_prompt
+      return
+    end
+
+    resolver = Resolver.new(self.class.interpreter)
+    resolver.resolve(statements)
+
+    if self.class.had_error 
       return
     end
 
