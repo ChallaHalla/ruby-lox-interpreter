@@ -5,16 +5,22 @@ require_relative './lox_instance'
 class LoxClass 
   include LoxCallable
   attr_reader :name
+  attr_reader :superclass
 
-  #: (String, Hash[String, LoxFunction]) -> void
-  def initialize(name, methods)
+  #: (String, LoxClass?, Hash[String, LoxFunction]) -> void
+  def initialize(name, superclass, methods)
     @name = name
     @methods = methods #: Hash[String, LoxFunction]
+    @superclass = superclass #: LoxClass?
   end
 
   #: (String) -> LoxFunction?
   def find_method(name)
-    return @methods[name] 
+    return @methods[name] if @methods[name]
+
+    if superclass
+      superclass.find_method(name)
+    end
   end
 
   #: () -> String 

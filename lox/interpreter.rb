@@ -80,6 +80,18 @@ class Interpreter
     value
   end
 
+  #: (Expr::Super) -> Object
+  def visit_super_expr(expr)
+    distance = @locals[expr]
+    superclass = @environment.get_at(distance, "super")
+    object = @environment.get_at(distance - 1, "this")
+    method = superclass.find_method(expr.method.lexeme)
+    if method.nil?
+      raise RuntimeError.new(expr.method, "Undefined property '#{expr.method.lexeme}'.")
+    end
+    method.bind(object)
+  end
+
   #: (Expr::This) -> Object
   def visit_this_expr(expr)
     look_up_variable(expr.keyword, expr)
@@ -280,13 +292,31 @@ class Interpreter
 
   #: (Stmt::Class) -> void
   def visit_class_stmt(stmt)
+    superclass = nil
+    if !stmt.superclass.nil?
+      superclass = evaluate(stmt.superclass)
+      if !superclass.is_a?(LoxClass)
+        raise RuntimeError.new(stmt.superclass.name, "Superclass must be a class.")
+      end
+    end
+
     @environment.define(stmt.name.lexeme, nil)
+
+    if stmt.superclass
+      @environment = Environment.new(@environment)
+      @environment.define("super", superclass)
+    end
+
     methods = {}
     stmt.methods.each do |method|
       function = LoxFunction.new(method, @environment, method.name.lexeme == "init")
       methods[method.name.lexeme] = function
     end
-    klass = LoxClass.new(stmt.name.lexeme, methods)
+    klass = LoxClass.new(stmt.name.lexeme, superclass, methods)
+
+    if superclass 
+      @environment = @environment.enclosing
+    end
 
     @environment.assign(stmt.name, klass)
     nil

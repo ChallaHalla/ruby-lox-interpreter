@@ -65,12 +65,15 @@ class Stmt
     include Visitor
     #: Token
     attr_reader :name
+    #: Expr::Variable?
+    attr_reader :superclass
     #: Array[Stmt::Function]
     attr_reader :methods
 
-    #: (Token, Array[Stmt::Function]) -> void
-    def initialize(name, methods)
+    #: (Token, Expr::Variable?, Array[Stmt::Function]) -> void
+    def initialize(name, superclass, methods)
       @name = name #: Token
+      @superclass = superclass #: Expr::Variable?
       @methods = methods #: Array[Stmt::Function]
     end
 

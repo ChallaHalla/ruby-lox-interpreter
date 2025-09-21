@@ -18,6 +18,7 @@ class Resolver
     enums do 
       NONE = new
       CLASS = new
+      SUBCLASS = new
     end
   end
 
@@ -43,6 +44,21 @@ class Resolver
     @current_class = ClassType::CLASS
     declare(stmt.name)
     define(stmt.name)
+
+    superclass = stmt.superclass
+    if !superclass.nil? && stmt.name.lexeme == superclass.name.lexeme
+      Lox.error_for_token(superclass.name, "A class can't inherit from itself.")
+    end
+    if superclass
+      @current_class = ClassType::SUBCLASS
+      resolve(superclass) 
+    end
+
+    if stmt.superclass
+      begin_scope
+      @scopes.last["super"] = true
+    end
+
     begin_scope
     scope = @scopes.last #: as !nil 
     scope["this"] = true
@@ -56,6 +72,8 @@ class Resolver
     end
 
     end_scope
+
+    end_scope if stmt.superclass
     @current_class = enclosing_class
     nil
   end
@@ -161,6 +179,17 @@ class Resolver
   def visit_set_expr(expr)
     resolve(expr.value)
     resolve(expr.object)
+    nil
+  end
+
+  #: (Expr::Super) -> void
+  def visit_super_expr(expr)
+    if @current_class == ClassType::NONE
+      Lox.error_for_token(expr.keyword, "Can't user 'super' outside of a class.")
+    elsif @current_class != ClassType::SUBCLASS
+      Lox.error_for_token(expr.keyword, "Can't user 'super' in a class with no superclass")
+    end
+    resolve_local(expr, expr.keyword)
     nil
   end
 

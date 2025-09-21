@@ -21,13 +21,14 @@ class GenerateAst
                                                           'Logical  : Expr left, Token operator, Expr right',
                                                           'Variable : Token name',
                                                           'Set      : Expr object, Token name, Expr value',
+                                                          'Super    : Token keyword, Token method',
                                                           'This     : Token keyword',
                                                           'Unary    : Token operator, Expr right'])
 
       # TODO: need to extract definting the visitor module from this method so
       # that it isn't defined twice
       define_ast(output_dir:, base_name: 'stmt', types:  ['Block      : Array[Stmt] statements',
-                                                          'Class      : Token name, Array[Stmt::Function] methods',
+                                                          'Class      : Token name, Expr::Variable? superclass, Array[Stmt::Function] methods',
                                                           'Expression : Expr expression',
                                                           'Function   : Token name, Array[Token] params, Array[Stmt] body',
                                                           'If         : Expr condition, Stmt then_branch, Stmt else_branch',

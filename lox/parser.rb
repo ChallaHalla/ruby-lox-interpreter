@@ -37,6 +37,12 @@ class Parser
 
   def class_declaration
     name = consume(TokenType::IDENTIFIER, "Expect class name.") #: as !nil
+
+    superclass = nil 
+    if match(TokenType::LESS) 
+      consume(TokenType::IDENTIFIER, "Expect superclass name")
+      superclass = Expr::Variable.new(previous)
+    end
     consume(TokenType::LEFT_BRACE, "Expect '{' before class body.")
 
     methods = [] #: Array[Stmt::Function]
@@ -46,7 +52,7 @@ class Parser
     end
     consume(TokenType::RIGHT_BRACE, "Expect '}' after class body.")
 
-    Stmt::Class.new(name, methods)
+    Stmt::Class.new(name, superclass, methods)
   end
 
   #: () -> Stmt
@@ -342,7 +348,7 @@ class Parser
 
   end
 
-  #: () -> Expr::Literal | Expr::Grouping
+  #: () -> (Expr)
   def primary
     if match(TokenType::TRUE)
       Expr::Literal.new(true)
@@ -356,6 +362,11 @@ class Parser
       expr = expression
       consume(TokenType::RIGHT_PAREN, "Expect ')' after expression")
       Expr::Grouping.new(expr)
+    elsif match(TokenType::SUPER)
+      keyword = previous
+      consume(TokenType::DOT, "Expect '.' after super")
+      method = consume(TokenType::IDENTIFIER, "Expected method name after 'super.'")
+      Expr::Super.new(keyword, method)
     elsif match(TokenType::THIS)
       Expr::This.new(previous)
     elsif match(TokenType::IDENTIFIER)
@@ -365,7 +376,7 @@ class Parser
     end
   end
 
-  #: (TokenType, String) -> Token?
+  #: (TokenType, String) -> Token
   def consume(token_type, error_message)
     return advance if check(token_type)
 
