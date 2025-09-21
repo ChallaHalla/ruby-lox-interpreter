@@ -25,8 +25,7 @@ class LoxInstance
   end
 
   #: () -> String
-  def to_string
-    binding.irb
+  def to_s
     @klass.name + " instance"
   end
 end

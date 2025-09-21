@@ -18,7 +18,7 @@ class LoxClass
   end
 
   #: () -> String 
-  def to_string
+  def to_s
     name
   end
 
