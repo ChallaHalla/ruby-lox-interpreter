@@ -25,6 +25,7 @@ class Parser
 
   #: () -> Stmt?
   def declaration
+    return class_declaration if match(TokenType::CLASS)
     return function("function") if match(TokenType::FUN)
     return var_declaration if match(TokenType::VAR)
 
@@ -34,13 +35,30 @@ class Parser
     nil
   end
 
+  def class_declaration
+    name = consume(TokenType::IDENTIFIER, "Expect class name.") #: as !nil
+    consume(TokenType::LEFT_BRACE, "Expect '{' before class body.")
+
+    methods = [] #: Array[Stmt::Function]
+
+    while !check(TokenType::RIGHT_BRACE) && !is_at_end?
+      methods << function("method")
+    end
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after class body.")
+
+    Stmt::Class.new(name, methods)
+  end
+
   #: () -> Stmt
   def var_declaration
     name = consume(TokenType::IDENTIFIER, 'Expect variable name.') #: as Token
     initializer = nil
-    initializer = expression if match(TokenType::EQUAL)
+    initializer = expression if match(TokenType::EQUAL) #: as !nil
 
     consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.")
+
+    # Adding this in due to a type error with initializer being nil
+    raise "No initializer for var declaration." if initializer.nil?
     Stmt::Var.new(name, initializer)
   end
 
@@ -196,6 +214,8 @@ class Parser
       if expr.is_a?(Expr::Variable)
         name = expr.name
         return Expr::Assign.new(name, value)
+      elsif expr.is_a?(Expr::Get)
+        return Expr::Set.new(expr.object, expr.name, value)
       end
       error(equals, 'Invalid assignment target.')
     end
@@ -262,7 +282,7 @@ class Parser
 
   #: () -> Expr
   def factor
-    expr = unary
+    expr = unary #: untyped
     while match(TokenType::SLASH, TokenType::STAR)
       operator = previous
       right = unary
@@ -272,7 +292,7 @@ class Parser
     expr
   end
 
-  #: () -> Expr::Literal | Expr::Grouping | Expr::Unary
+  #: () -> (Expr::Literal | Expr::Grouping | Expr::Unary)
   def unary
     if match(TokenType::BANG, TokenType::MINUS)
       operator = previous
@@ -283,12 +303,15 @@ class Parser
     end
   end
 
-  #: () -> Expr
+  #: () -> Expr::Literal | Expr::Grouping | Expr::Unary
   def call
-    expr = primary 
+    expr = primary #: untyped
     while true do 
       if match(TokenType::LEFT_PAREN)
         expr = finish_call(expr)
+      elsif match(TokenType::DOT)
+        name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.") #: as !nil
+        expr = Expr::Get.new(expr, name)
       else 
         break;
       end
@@ -333,6 +356,8 @@ class Parser
       expr = expression
       consume(TokenType::RIGHT_PAREN, "Expect ')' after expression")
       Expr::Grouping.new(expr)
+    elsif match(TokenType::THIS)
+      Expr::This.new(previous)
     elsif match(TokenType::IDENTIFIER)
       Expr::Variable.new(previous)
     else

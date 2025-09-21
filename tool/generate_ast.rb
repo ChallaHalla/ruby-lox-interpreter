@@ -4,6 +4,7 @@
 require 'sorbet-runtime'
 
 class GenerateAst
+  AST_DELIMITER = ": "
   class << self
     #: () -> void
     def run
@@ -14,15 +15,19 @@ class GenerateAst
       define_ast(output_dir:, base_name: 'expr', types:  ['Assign   : Token name, Expr value',
                                                           'Binary   : Expr left, Token operator, Expr right',
                                                           'Call     : Expr callee, Token paren, Array[Expr] arguments',
+                                                          'Get      : Expr object, Token name',
                                                           'Grouping : Expr expression',
                                                           'Literal  : Object value',
                                                           'Logical  : Expr left, Token operator, Expr right',
                                                           'Variable : Token name',
+                                                          'Set      : Expr object, Token name, Expr value',
+                                                          'This     : Token keyword',
                                                           'Unary    : Token operator, Expr right'])
 
       # TODO: need to extract definting the visitor module from this method so
       # that it isn't defined twice
       define_ast(output_dir:, base_name: 'stmt', types:  ['Block      : Array[Stmt] statements',
+                                                          'Class      : Token name, Array[Stmt::Function] methods',
                                                           'Expression : Expr expression',
                                                           'Function   : Token name, Array[Token] params, Array[Stmt] body',
                                                           'If         : Expr condition, Stmt then_branch, Stmt else_branch',
@@ -85,7 +90,7 @@ class GenerateAst
     def build_visitor_module(base_name:, types:)
       content = "module Visitor\n"
       types.each do |type|
-        type_name = type.split(':')[0]&.strip&.downcase
+        type_name = type.split(AST_DELIMITER)[0]&.strip&.downcase
         content += "def visit_#{type_name}_#{base_name}\n"
         content += "raise MethodNotImplemented\n "
         content += "end\n"
@@ -98,8 +103,8 @@ class GenerateAst
     def build_type_classes(base_name:, types:)
       content = ''
       types.each do |type|
-        class_name = type.split(':')[0]&.strip
-        fields = type.split(':')[1]&.strip
+        class_name = type.split(AST_DELIMITER)[0]&.strip
+        fields = type.split(AST_DELIMITER)[1]&.strip
 
         # Here we want to get the fields and types together
         # to build attr_readers with type info

@@ -6,6 +6,7 @@ require_relative '../stmt'
 require_relative './environment'
 require_relative './lox_callable'
 require_relative './lox_function'
+require_relative './lox_class'
 
 require_relative 'runtime_error'
 class Interpreter
@@ -64,6 +65,24 @@ class Interpreter
 
     # If neither checked cases can short circuit, we must evaluate the RHS
     return evaluate(expr.right)
+  end
+
+  #: (Expr::Set) -> Object
+  def visit_set_expr(expr)
+    object = evaluate(expr.object)
+    if !object.is_a?(LoxInstance)
+      raise RuntimeError.new(expr.name, "Only instances have fields.")
+    end
+
+    value = evaluate(expr.value)
+    object.set(expr.name, value)
+
+    value
+  end
+
+  #: (Expr::This) -> Object
+  def visit_this_expr(expr)
+    look_up_variable(expr.keyword, expr)
   end
 
   #: (Expr::Grouping) -> Object
@@ -178,6 +197,16 @@ class Interpreter
     function.call(self, arguments)
   end
 
+  #: (Expr::Get) -> Object
+  def visit_get_expr(expr)
+    object = evaluate(expr.object)
+    if object.is_a?(LoxInstance) 
+      return object.get(expr.name)
+    end
+
+    raise RuntimeError.new(expr.name, "Only instances have properties.")
+  end
+
   #: (Stmt::Print) -> void
   def visit_print_stmt(stmt)
     value = evaluate(stmt.expression)
@@ -227,7 +256,7 @@ class Interpreter
   end
 
   def visit_function_stmt(stmt)
-    function = LoxFunction.new(stmt, @environment)
+    function = LoxFunction.new(stmt, @environment, false)
     @environment.define(stmt.name.lexeme, function)
 
     nil
@@ -246,6 +275,20 @@ class Interpreter
   #: (Stmt::Block) -> void
   def visit_block_stmt(stmt)
     execute_block(stmt.statements, Environment.new(@environment))
+    nil
+  end
+
+  #: (Stmt::Class) -> void
+  def visit_class_stmt(stmt)
+    @environment.define(stmt.name.lexeme, nil)
+    methods = {}
+    stmt.methods.each do |method|
+      function = LoxFunction.new(method, @environment, method.name.lexeme == "init")
+      methods[method.name.lexeme] = function
+    end
+    klass = LoxClass.new(stmt.name.lexeme, methods)
+
+    @environment.assign(stmt.name, klass)
     nil
   end
 

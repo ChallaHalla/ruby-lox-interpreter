@@ -8,7 +8,16 @@ class Resolver
   class FunctionType < T::Enum
     enums do
       FUNCTION = new
+      METHOD = new
+      INITIALIZER = new
       NONE = new
+    end
+  end
+
+  class ClassType < T::Enum
+    enums do 
+      NONE = new
+      CLASS = new
     end
   end
 
@@ -17,6 +26,7 @@ class Resolver
     @interpreter = interpreter #: Interpreter
     @scopes = [] #: Array[Hash[String, bool]]
     @current_function = FunctionType::NONE #: FunctionType
+    @current_class = ClassType::NONE #: ClassType
   end
 
   #: (Stmt::Block) -> void
@@ -24,6 +34,29 @@ class Resolver
     begin_scope
     resolve_statements(stmt.statements)
     end_scope
+    nil
+  end
+
+  #: (Stmt::Class) -> void
+  def visit_class_stmt(stmt)
+    enclosing_class = @current_class
+    @current_class = ClassType::CLASS
+    declare(stmt.name)
+    define(stmt.name)
+    begin_scope
+    scope = @scopes.last #: as !nil 
+    scope["this"] = true
+      
+    stmt.methods.each do |method|
+      declaration = FunctionType::METHOD
+      if method.name.lexeme == "init"
+        declaration = FunctionType::INITIALIZER
+      end
+      resolve_function(method, declaration)
+    end
+
+    end_scope
+    @current_class = enclosing_class
     nil
   end
 
@@ -63,6 +96,9 @@ class Resolver
     end
 
     if !stmt.value.nil?
+      if @current_function == FunctionType::INITIALIZER
+        Lox.error_for_token(stmt.keyword, "Can't return a value from an initializer.")
+      end
       resolve(stmt.value)
     end
     nil
@@ -101,6 +137,14 @@ class Resolver
     nil
   end
 
+  #: (Expr::Get) -> void
+  def visit_get_expr(expr)
+    resolve(expr.object)
+    nil
+  end
+
+
+
   #: (Expr::Literal) -> void
   def visit_literal_expr(expr)
     nil
@@ -110,6 +154,23 @@ class Resolver
   def visit_logical_expr(expr)
     resolve(expr.left)
     resolve(expr.right)
+    nil
+  end
+
+  #: (Expr::Set) -> void
+  def visit_set_expr(expr)
+    resolve(expr.value)
+    resolve(expr.object)
+    nil
+  end
+
+  #: (Expr::This) -> void
+  def visit_this_expr(expr)
+    if @current_class == ClassType::NONE
+      Lox.error_for_token(expr.keyword, "Can't use 'this' outside of a class")
+      return nil
+    end
+    resolve_local(expr, expr.keyword)
     nil
   end
 

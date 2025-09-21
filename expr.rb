@@ -20,6 +20,10 @@ class Expr
       raise MethodNotImplemented
     end
 
+    def visit_get_expr
+      raise MethodNotImplemented
+    end
+
     def visit_grouping_expr
       raise MethodNotImplemented
     end
@@ -33,6 +37,14 @@ class Expr
     end
 
     def visit_variable_expr
+      raise MethodNotImplemented
+    end
+
+    def visit_set_expr
+      raise MethodNotImplemented
+    end
+
+    def visit_this_expr
       raise MethodNotImplemented
     end
 
@@ -104,6 +116,25 @@ class Expr
     end
   end
 
+  class Get < Expr
+    include Visitor
+    #: Expr
+    attr_reader :object
+    #: Token
+    attr_reader :name
+
+    #: (Expr, Token) -> void
+    def initialize(object, name)
+      @object = object #: Expr
+      @name = name #: Token
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_get_expr(self)
+    end
+  end
+
   class Grouping < Expr
     include Visitor
     #: Expr
@@ -171,6 +202,44 @@ class Expr
     #: (Expr) -> void
     def accept(visitor)
       visitor.visit_variable_expr(self)
+    end
+  end
+
+  class Set < Expr
+    include Visitor
+    #: Expr
+    attr_reader :object
+    #: Token
+    attr_reader :name
+    #: Expr
+    attr_reader :value
+
+    #: (Expr, Token, Expr) -> void
+    def initialize(object, name, value)
+      @object = object #: Expr
+      @name = name #: Token
+      @value = value #: Expr
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_set_expr(self)
+    end
+  end
+
+  class This < Expr
+    include Visitor
+    #: Token
+    attr_reader :keyword
+
+    #: (Token) -> void
+    def initialize(keyword)
+      @keyword = keyword #: Token
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_this_expr(self)
     end
   end
 
