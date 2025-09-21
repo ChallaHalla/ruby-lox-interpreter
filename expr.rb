@@ -44,6 +44,10 @@ class Expr
       raise MethodNotImplemented
     end
 
+    def visit_super_expr
+      raise MethodNotImplemented
+    end
+
     def visit_this_expr
       raise MethodNotImplemented
     end
@@ -224,6 +228,25 @@ class Expr
     #: (Expr) -> void
     def accept(visitor)
       visitor.visit_set_expr(self)
+    end
+  end
+
+  class Super < Expr
+    include Visitor
+    #: Token
+    attr_reader :keyword
+    #: Token
+    attr_reader :method
+
+    #: (Token, Token) -> void
+    def initialize(keyword, method)
+      @keyword = keyword #: Token
+      @method = method #: Token
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_super_expr(self)
     end
   end
 
