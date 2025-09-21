@@ -20,7 +20,7 @@ class Resolver
   end
 
   #: (Stmt::Block) -> void
-  def visit_block_statement(stmt)
+  def visit_block_stmt(stmt)
     begin_scope
     resolve_statements(stmt.statements)
     end_scope
@@ -28,13 +28,13 @@ class Resolver
   end
 
   #: (Stmt::Expression) -> void
-  def visit_expression_statement(stmt)
+  def visit_expression_stmt(stmt)
     resolve(stmt.expression)
     nil
   end
 
   #: (Stmt::Function) -> void
-  def visit_function_statement(stmt)
+  def visit_function_stmt(stmt)
     declare(stmt.name)
     define(stmt.name)
     resolve_function(stmt, FunctionType::FUNCTION)
@@ -69,7 +69,7 @@ class Resolver
   end
 
   #: (Stmt::Var) -> void
-  def visit_var_statement(stmt)
+  def visit_var_stmt(stmt)
     declare(stmt.name)
     if !stmt.initializer.nil?
       resolve(stmt.initializer)
@@ -146,11 +146,10 @@ class Resolver
   end
 
 
+  #: (Expr | Stmt) -> void
   def resolve(statement)
-    case statement 
-    when Stmt, Expr
-      statement.accept(self)
-    end
+    # Expecting Stmt or Expr
+    statement.accept(self)
   end
 
   private
@@ -165,7 +164,7 @@ class Resolver
       declare(param)
       define(param)
     end
-    resolve(function.body)
+    resolve_statements(function.body)
     end_scope
     @current_function = enclosing_function
   end

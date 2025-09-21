@@ -51,7 +51,7 @@ class Lox
     end
 
     resolver = Resolver.new(self.class.interpreter)
-    resolver.resolve(statements)
+    resolver.resolve_statements(statements)
 
     if self.class.had_error 
       return
