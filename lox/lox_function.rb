@@ -29,13 +29,11 @@ class LoxFunction
 
     return_value = catch(:return_value) do
       interpreter.execute_block(@declaration.body, environment)
+      nil
     end
 
-    if return_value 
-      return return_value.value
-    else
-      return @closure.get_at(0, "this") if @is_initializer
-    end
+    return @closure.get_at(0, "this") if @is_initializer
+    return return_value.value if return_value 
   end
 
   def arity
