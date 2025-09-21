@@ -12,6 +12,10 @@ class Stmt
       raise MethodNotImplemented
     end
 
+    def visit_class_stmt
+      raise MethodNotImplemented
+    end
+
     def visit_expression_stmt
       raise MethodNotImplemented
     end
@@ -54,6 +58,25 @@ class Stmt
     #: (Expr) -> void
     def accept(visitor)
       visitor.visit_block_stmt(self)
+    end
+  end
+
+  class Class < Stmt
+    include Visitor
+    #: Token
+    attr_reader :name
+    #: Array[Stmt::Function]
+    attr_reader :methods
+
+    #: (Token, Array[Stmt::Function]) -> void
+    def initialize(name, methods)
+      @name = name #: Token
+      @methods = methods #: Array[Stmt::Function]
+    end
+
+    #: (Expr) -> void
+    def accept(visitor)
+      visitor.visit_class_stmt(self)
     end
   end
 
